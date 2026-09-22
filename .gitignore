@@ -155,6 +155,8 @@ activemq-data/
 # Personal source material is local and must never be committed.
 data/documents/
 !data/documents/.gitkeep
+data/extractions/
+!data/extractions/.gitkeep
 .envrc
 .venv/
 env/
@@ -222,4 +224,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-_app_documents/
+_app_data/

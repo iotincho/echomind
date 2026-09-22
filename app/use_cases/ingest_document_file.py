@@ -23,7 +23,8 @@ class IngestDocumentFile:
     def __init__(self, document_store: DocumentStore) -> None:
         self._ingest_document = IngestDocument(document_store)
 
-    def execute(self, filename: str | None, content: bytes) -> Document:
+    def build_new_document(self, filename: str | None, content: bytes) -> NewDocument:
+        """Validate an upload and translate it into the provider-neutral input model."""
         if not filename:
             raise UnsupportedDocumentFileError("A filename is required")
 
@@ -40,10 +41,12 @@ class IngestDocumentFile:
         except UnicodeDecodeError as error:
             raise InvalidDocumentEncodingError("Document files must use UTF-8 encoding") from error
 
-        return self._ingest_document.execute(
-            NewDocument(
-                content=text_content,
-                source="file_upload",
-                metadata={"filename": safe_filename, "format": extension.removeprefix(".")},
-            )
+        return NewDocument(
+            content=text_content,
+            source="file_upload",
+            metadata={"filename": safe_filename, "format": extension.removeprefix(".")},
         )
+
+    def execute(self, filename: str | None, content: bytes) -> Document:
+        """Persist a file directly for callers that intentionally skip extraction."""
+        return self._ingest_document.execute(self.build_new_document(filename, content))

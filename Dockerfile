@@ -6,17 +6,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN groupadd --system echomind \
-    && useradd --system --gid echomind --create-home echomind
+#RUN groupadd --system echomind \
+#    && useradd --system --gid echomind --create-home echomind
+
+COPY pyproject.toml .
+RUN pip install --upgrade pip \
+    && pip install .
 
 COPY pyproject.toml README.md ./
+
 COPY app ./app
+#RUN mkdir -p /app/data/documents /app/data/extractions 
 
-RUN pip install . \
-    && mkdir -p /app/data/documents \
-    && chown -R echomind:echomind /app
-
-USER echomind
+#RUN chown -R echomind:echomind /app
+#USER echomind
 
 EXPOSE 8000
 

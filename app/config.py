@@ -20,6 +20,12 @@ class Settings(BaseSettings):
         default="echomind-local-password", validation_alias="NEO4J_PASSWORD", repr=False
     )
     documents_path: Path = Field(default=Path("data/documents"), validation_alias="DOCUMENTS_PATH")
+    extractions_path: Path = Field(
+        default=Path("data/extractions"), validation_alias="EXTRACTIONS_PATH"
+    )
+    llm_provider: str = Field(default="openai", validation_alias="LLM_PROVIDER")
+    openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY", repr=False)
+    openai_model: str | None = Field(default=None, validation_alias="OPENAI_MODEL")
 
 
 @lru_cache

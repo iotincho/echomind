@@ -220,7 +220,7 @@ Posible extracción:
 }
 ```
 
-El esquema y el prompt del extractor son el principal espacio de experimentación. No se debe pedir análisis psicológico ni atribuir rasgos de personalidad.
+El esquema y el prompt del extractor son el principal espacio de experimentación. No se debe pedir análisis psicológico ni atribuir rasgos de personalidad. La historia, los contratos y el criterio para crear una nueva variante están en el [README de perfiles](app/extraction/README.md).
 
 ## Sentimiento y emoción
 
@@ -330,6 +330,8 @@ La arquitectura debe mantenerse limpia y tipada, pero sin sobreingeniería mient
 6. **Reflection:** una función `answer(question)` que combine grafo, vectores, evidencia y LLM.
 7. **Experiments:** batería de preguntas reales para evaluar utilidad, precisión y alucinaciones.
 8. **Mobile/API:** únicamente cuando el motor demuestre valor.
+
+La implementación actual de la fase 4 y consultas de inspección están documentadas en el [README de persistencia de grafo](app/graph/README.md).
 
 ## Primer hito técnico
 

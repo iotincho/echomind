@@ -11,11 +11,18 @@ class DocumentAlreadyExistsError(Exception):
     """Raised when a caller retries with an already persisted stable ID."""
 
 
+class DocumentNotFoundError(Exception):
+    """Raised when a requested original document does not exist."""
+
+
 class DocumentStore(Protocol):
     """Persistence boundary used by document use cases."""
 
     def save(self, document: Document) -> None:
         """Persist one original document."""
+
+    def get(self, document_id: object) -> Document:
+        """Retrieve one original document by its stable ID."""
 
 
 class FileDocumentStore:
@@ -36,3 +43,9 @@ class FileDocumentStore:
             encoding="utf-8",
         )
         temporary.replace(destination)
+
+    def get(self, document_id: object) -> Document:
+        destination = self._directory / f"{document_id}.json"
+        if not destination.is_file():
+            raise DocumentNotFoundError(f"Document {document_id} was not found")
+        return Document.model_validate_json(destination.read_text(encoding="utf-8"))

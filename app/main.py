@@ -6,13 +6,17 @@ from fastapi import FastAPI
 
 from app.api.router import api_router
 from app.config import get_settings
+from app.dependencies import close_graph_store
 from app.logging import configure_logging
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     configure_logging(get_settings().log_level)
-    yield
+    try:
+        yield
+    finally:
+        close_graph_store()
 
 
 app = FastAPI(
