@@ -1,10 +1,11 @@
 import httpx
 import pytest
 
-from app.dependencies import get_ingest_document
+from app.dependencies import get_ingest_document, get_ingest_document_file
 from app.main import app
 from app.services.document_store import FileDocumentStore
 from app.use_cases.ingest_document import IngestDocument
+from app.use_cases.ingest_document_file import IngestDocumentFile
 
 
 @pytest.mark.anyio
@@ -29,6 +30,34 @@ async def test_create_document_delegates_to_use_case_and_returns_created_documen
     assert body["content"] == "Estoy evaluando un cambio."
     assert body["source"] == "manual"
     assert (tmp_path / f"{body['id']}.json").is_file()
+
+
+@pytest.mark.anyio
+async def test_create_document_from_markdown_file(tmp_path) -> None:
+    async def override_ingest_document_file() -> IngestDocumentFile:
+        return IngestDocumentFile(FileDocumentStore(tmp_path))
+
+    app.dependency_overrides[get_ingest_document_file] = override_ingest_document_file
+
+    try:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/documents/files",
+                files={
+                    "file": (
+                        "reflexion.md",
+                        b"# Una nota\n\nContenido original",
+                        "text/markdown",
+                    )
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 201
+    assert response.json()["metadata"] == {"filename": "reflexion.md", "format": "md"}
+    assert (tmp_path / f"{response.json()['id']}.json").is_file()
 
 
 @pytest.fixture

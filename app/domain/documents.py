@@ -13,6 +13,7 @@ class NewDocument(BaseModel):
 
     content: str
     source: str = Field(default="api", min_length=1, max_length=100)
+    metadata: dict[str, str] = Field(default_factory=dict)
     created_at: datetime | None = None
     id: UUID | None = None
 
@@ -39,6 +40,7 @@ class Document(BaseModel):
     id: UUID
     content: str
     source: str
+    metadata: dict[str, str]
     created_at: datetime
 
 
@@ -48,5 +50,6 @@ def build_document(new_document: NewDocument) -> Document:
         id=new_document.id or uuid4(),
         content=new_document.content,
         source=new_document.source,
+        metadata=new_document.metadata,
         created_at=new_document.created_at or datetime.now(UTC),
     )

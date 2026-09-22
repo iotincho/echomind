@@ -5,6 +5,7 @@ from functools import lru_cache
 from app.config import get_settings
 from app.services.document_store import FileDocumentStore
 from app.use_cases.ingest_document import IngestDocument
+from app.use_cases.ingest_document_file import IngestDocumentFile
 
 
 @lru_cache
@@ -16,3 +17,8 @@ def get_document_store() -> FileDocumentStore:
 async def get_ingest_document() -> IngestDocument:
     """Build the application operation used by any delivery interface."""
     return IngestDocument(get_document_store())
+
+
+async def get_ingest_document_file() -> IngestDocumentFile:
+    """Build the file-upload operation used by HTTP or a future CLI."""
+    return IngestDocumentFile(get_document_store())
