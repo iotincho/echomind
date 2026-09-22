@@ -1,4 +1,25 @@
 services:
+  api:
+    build:
+      context: .
+    environment:
+      ECHOMIND_ENVIRONMENT: development
+      ECHOMIND_LOG_LEVEL: INFO
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-echomind-local-password}
+      DOCUMENTS_PATH: /app/data/documents
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - document_data:/app/data/documents
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   neo4j:
     image: neo4j:5-community
     environment:
@@ -11,5 +32,6 @@ services:
       - neo4j_logs:/logs
 
 volumes:
+  document_data:
   neo4j_data:
   neo4j_logs:

@@ -1,0 +1,14 @@
+.git
+.agents
+.codex
+.venv
+.pytest_cache
+.ruff_cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.env.*
+data/
+tests/
+_app_documents/
