@@ -739,7 +739,7 @@ Start with a clean but intentionally simple architecture:
 ```text
 personal-mirror/
 │
-├── app/
+├── src/
 │   ├── ingestion/
 │   ├── extraction/
 │   ├── graph/

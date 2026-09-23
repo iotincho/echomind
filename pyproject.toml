@@ -37,4 +37,4 @@ line-length = 100
 select = ["E", "F", "I"]
 
 [tool.setuptools.packages.find]
-include = ["app*"]
+include = ["src*"]

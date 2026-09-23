@@ -3,21 +3,21 @@ from uuid import uuid4
 
 import pytest
 
-from app.domain.documents import Document, NewDocument
-from app.extraction.contracts import Concept, Evidence, ExtractionResult
-from app.extraction.profiles import V3_PROFILE
-from app.services.document_store import FileDocumentStore
-from app.services.extraction_store import FileExtractionStore
-from app.services.openai_extractor import OpenAIExtractor
-from app.services.structured_extractor import ProviderExtraction, TokenUsage
-from app.use_cases.extract_document import (
+from src.domain.documents import Document, NewDocument
+from src.extraction.contracts import Concept, Evidence, ExtractionResult
+from src.extraction.profiles import V3_PROFILE
+from src.services.document_store import FileDocumentStore
+from src.services.extraction_store import FileExtractionStore
+from src.services.openai_extractor import OpenAIExtractor
+from src.services.structured_extractor import ProviderExtraction, TokenUsage
+from src.use_cases.extract_document import (
     ExtractDocument,
     ExtractionEvidenceError,
     ExtractionRunFailedError,
     resolve_evidence,
 )
-from app.use_cases.ingest_and_extract_document import IngestAndExtractDocument
-from app.use_cases.ingest_document import IngestDocument
+from src.use_cases.ingest_and_extract_document import IngestAndExtractDocument
+from src.use_cases.ingest_document import IngestDocument
 
 
 class FakeExtractor:
@@ -100,7 +100,7 @@ def test_extract_document_records_failure_when_evidence_does_not_match(tmp_path,
     )
     use_case = ExtractDocument(document_store, extraction_store, FakeExtractor(invalid_result))
 
-    caplog.set_level("ERROR", logger="app.use_cases.extract_document")
+    caplog.set_level("ERROR", logger="src.use_cases.extract_document")
     with pytest.raises(ExtractionRunFailedError) as error:
         use_case.execute(document.id)
 
@@ -192,7 +192,7 @@ def test_ingest_and_extract_logs_the_completed_result(tmp_path, caplog) -> None:
         ),
     )
 
-    caplog.set_level("INFO", logger="app.use_cases.ingest_and_extract_document")
+    caplog.set_level("INFO", logger="src.use_cases.ingest_and_extract_document")
     processed = process.execute(NewDocument(content=document.content, source="test"))
 
     assert processed.extraction.status == "completed"

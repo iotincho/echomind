@@ -2,11 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from app.embeddings.contracts import SimilarClaim
-from app.reflection.contracts import ClaimRelation, ReflectionObservation, ReflectionResult
-from app.services.reflection_provider import ProviderReflection
-from app.services.reflection_store import FileReflectionStore
-from app.use_cases.resolve_question import ReflectionRunFailedError, ResolveQuestion
+from src.embeddings.contracts import SimilarClaim
+from src.reflection.contracts import ClaimRelation, ReflectionObservation, ReflectionResult
+from src.services.reflection_provider import ProviderReflection
+from src.services.reflection_store import FileReflectionStore
+from src.use_cases.resolve_question import ReflectionRunFailedError, ResolveQuestion
 
 
 def candidate() -> SimilarClaim:

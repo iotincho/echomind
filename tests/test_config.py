@@ -1,4 +1,4 @@
-from app.config import Settings
+from src.config import Settings
 
 
 def test_settings_read_neo4j_values_from_environment(monkeypatch) -> None:

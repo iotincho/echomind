@@ -1,9 +1,9 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from app.domain.documents import Document
-from app.embeddings.contracts import EmbeddingSpec
-from app.extraction.contracts import (
+from src.domain.documents import Document
+from src.embeddings.contracts import EmbeddingSpec
+from src.extraction.contracts import (
     Claim,
     ClaimType,
     Concept,
@@ -13,8 +13,8 @@ from app.extraction.contracts import (
     Relationship,
     RelationshipType,
 )
-from app.graph.neo4j_store import Neo4jGraphStore
-from app.services.extraction_store import new_extraction_run
+from src.graph.neo4j_store import Neo4jGraphStore
+from src.services.extraction_store import new_extraction_run
 
 
 class FakeResult:

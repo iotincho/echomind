@@ -9,13 +9,10 @@ WORKDIR /app
 #RUN groupadd --system echomind \
 #    && useradd --system --gid echomind --create-home echomind
 
-COPY pyproject.toml .
+COPY pyproject.toml README.md ./
+COPY src ./src
 RUN pip install --upgrade pip \
     && pip install .
-
-COPY pyproject.toml README.md ./
-
-COPY app ./app
 #RUN mkdir -p /app/data/documents /app/data/extractions 
 
 #RUN chown -R echomind:echomind /app
@@ -23,4 +20,4 @@ COPY app ./app
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

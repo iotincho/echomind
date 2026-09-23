@@ -2,14 +2,14 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
-from app.domain.documents import Document
-from app.embeddings.contracts import EmbeddingSpec, EmbeddingVector, SimilarClaim
-from app.extraction.contracts import Claim, ClaimType, Evidence, ExtractionResult
-from app.services.extraction_store import new_extraction_run
-from app.services.openai_embedding_provider import OpenAIEmbeddingProvider
-from app.use_cases.embed_claims import EmbedClaims
-from app.use_cases.extract_persist_and_embed_document import ExtractPersistAndEmbedDocument
-from app.use_cases.search_similar_claims import SearchSimilarClaims
+from src.domain.documents import Document
+from src.embeddings.contracts import EmbeddingSpec, EmbeddingVector, SimilarClaim
+from src.extraction.contracts import Claim, ClaimType, Evidence, ExtractionResult
+from src.services.extraction_store import new_extraction_run
+from src.services.openai_embedding_provider import OpenAIEmbeddingProvider
+from src.use_cases.embed_claims import EmbedClaims
+from src.use_cases.extract_persist_and_embed_document import ExtractPersistAndEmbedDocument
+from src.use_cases.search_similar_claims import SearchSimilarClaims
 
 
 class FakeEmbeddingProvider:

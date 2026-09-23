@@ -220,7 +220,7 @@ Posible extracción:
 }
 ```
 
-El esquema y el prompt del extractor son el principal espacio de experimentación. No se debe pedir análisis psicológico ni atribuir rasgos de personalidad. La historia, los contratos y el criterio para crear una nueva variante están en el [README de perfiles](app/extraction/README.md).
+El esquema y el prompt del extractor son el principal espacio de experimentación. No se debe pedir análisis psicológico ni atribuir rasgos de personalidad. La historia, los contratos y el criterio para crear una nueva variante están en el [README de perfiles](src/extraction/README.md).
 
 ## Sentimiento y emoción
 
@@ -304,7 +304,7 @@ Una futura PWA o app móvil solo debería escribir, grabar, consultar y explorar
 
 ```text
 echomind/
-├── app/
+├── src/
 │   ├── ingestion/
 │   ├── extraction/
 │   ├── graph/
@@ -331,9 +331,9 @@ La arquitectura debe mantenerse limpia y tipada, pero sin sobreingeniería mient
 7. **Experiments:** batería de preguntas reales para evaluar utilidad, precisión y alucinaciones.
 8. **Mobile/API:** únicamente cuando el motor demuestre valor.
 
-La persistencia de grafo está documentada en el [README de grafo](app/graph/README.md),
-la recuperación vectorial en el [README de embeddings](app/embeddings/README.md) y la
-resolución en el [README de reflexión](app/reflection/README.md).
+La persistencia de grafo está documentada en el [README de grafo](src/graph/README.md),
+la recuperación vectorial en el [README de embeddings](src/embeddings/README.md) y la
+resolución en el [README de reflexión](src/reflection/README.md).
 
 ## Primer hito técnico
 

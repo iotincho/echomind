@@ -2,7 +2,7 @@ services:
   api:
     build:
       context: .
-    #command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    #command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     env_file:
       - .env.local
     environment:
@@ -12,7 +12,7 @@ services:
     volumes:
       - ./_app_data/document_data:/data/documents
       - ./_app_data/extraction_data:/data/extractions
-      - ./app:/app/app
+      - ./src:/app/src
     healthcheck:
       test:
         ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health')"]

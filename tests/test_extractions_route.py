@@ -4,20 +4,20 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.dependencies import get_extract_persist_and_embed_document
-from app.domain.documents import Document
-from app.embeddings.contracts import EmbeddingSpec, EmbeddingVector
-from app.extraction.contracts import Concept, Evidence, ExtractionResult
-from app.main import app
-from app.services.document_store import FileDocumentStore
-from app.services.embedding_provider import EmbeddingProvider
-from app.services.extraction_store import FileExtractionStore
-from app.services.graph_store import GraphStore
-from app.services.structured_extractor import ProviderExtraction, TokenUsage
-from app.use_cases.embed_claims import EmbedClaims
-from app.use_cases.extract_and_persist_document import ExtractAndPersistDocument
-from app.use_cases.extract_document import ExtractDocument
-from app.use_cases.extract_persist_and_embed_document import ExtractPersistAndEmbedDocument
+from src.dependencies import get_extract_persist_and_embed_document
+from src.domain.documents import Document
+from src.embeddings.contracts import EmbeddingSpec, EmbeddingVector
+from src.extraction.contracts import Concept, Evidence, ExtractionResult
+from src.main import app
+from src.services.document_store import FileDocumentStore
+from src.services.embedding_provider import EmbeddingProvider
+from src.services.extraction_store import FileExtractionStore
+from src.services.graph_store import GraphStore
+from src.services.structured_extractor import ProviderExtraction, TokenUsage
+from src.use_cases.embed_claims import EmbedClaims
+from src.use_cases.extract_and_persist_document import ExtractAndPersistDocument
+from src.use_cases.extract_document import ExtractDocument
+from src.use_cases.extract_persist_and_embed_document import ExtractPersistAndEmbedDocument
 
 
 class FakeExtractor:

@@ -1,17 +1,17 @@
 import httpx
 import pytest
 
-from app.dependencies import get_ingest_and_extract_document, get_ingest_document_file
-from app.domain.documents import Document
-from app.extraction.contracts import Concept, Evidence, ExtractionResult
-from app.main import app
-from app.services.document_store import FileDocumentStore
-from app.services.extraction_store import FileExtractionStore
-from app.services.structured_extractor import ProviderExtraction, TokenUsage
-from app.use_cases.extract_document import ExtractDocument
-from app.use_cases.ingest_and_extract_document import IngestAndExtractDocument
-from app.use_cases.ingest_document import IngestDocument
-from app.use_cases.ingest_document_file import IngestDocumentFile
+from src.dependencies import get_ingest_and_extract_document, get_ingest_document_file
+from src.domain.documents import Document
+from src.extraction.contracts import Concept, Evidence, ExtractionResult
+from src.main import app
+from src.services.document_store import FileDocumentStore
+from src.services.extraction_store import FileExtractionStore
+from src.services.structured_extractor import ProviderExtraction, TokenUsage
+from src.use_cases.extract_document import ExtractDocument
+from src.use_cases.ingest_and_extract_document import IngestAndExtractDocument
+from src.use_cases.ingest_document import IngestDocument
+from src.use_cases.ingest_document_file import IngestDocumentFile
 
 
 class FakeExtractor:
