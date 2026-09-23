@@ -23,9 +23,16 @@ class Settings(BaseSettings):
     extractions_path: Path = Field(
         default=Path("data/extractions"), validation_alias="EXTRACTIONS_PATH"
     )
+    reflections_path: Path = Field(
+        default=Path("data/reflections"), validation_alias="REFLECTIONS_PATH"
+    )
     llm_provider: str = Field(default="openai", validation_alias="LLM_PROVIDER")
     openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY", repr=False)
     openai_model: str | None = Field(default=None, validation_alias="OPENAI_MODEL")
+    reflection_provider: str = Field(default="openai", validation_alias="REFLECTION_PROVIDER")
+    openai_reflection_model: str | None = Field(
+        default=None, validation_alias="OPENAI_REFLECTION_MODEL"
+    )
     embedding_provider: str = Field(default="openai", validation_alias="EMBEDDING_PROVIDER")
     openai_embedding_model: str = Field(
         default="text-embedding-3-small",

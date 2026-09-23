@@ -10,6 +10,10 @@ from app.services.embedding_provider import EmbeddingProvider, UnavailableEmbedd
 from app.services.extraction_store import FileExtractionStore
 from app.services.openai_embedding_provider import OpenAIEmbeddingProvider
 from app.services.openai_extractor import OpenAIExtractor
+from app.services.openai_reflection_provider import OpenAIReflectionProvider
+from app.services.reflection_context_store import ReflectionContextStore
+from app.services.reflection_provider import ReflectionProvider, UnavailableReflectionProvider
+from app.services.reflection_store import FileReflectionStore
 from app.services.structured_extractor import (
     StructuredExtractor,
     UnavailableStructuredExtractor,
@@ -21,6 +25,7 @@ from app.use_cases.extract_persist_and_embed_document import ExtractPersistAndEm
 from app.use_cases.ingest_and_extract_document import IngestAndExtractDocument
 from app.use_cases.ingest_document import IngestDocument
 from app.use_cases.ingest_document_file import IngestDocumentFile
+from app.use_cases.resolve_question import ResolveQuestion
 from app.use_cases.search_similar_claims import SearchSimilarClaims
 
 
@@ -59,6 +64,25 @@ def get_graph_store() -> Neo4jGraphStore:
 def get_claim_embedding_store() -> ClaimEmbeddingStore:
     """Reuse Neo4j for the graph and claim-vector persistence boundaries."""
     return get_graph_store()
+
+
+def get_reflection_context_store() -> ReflectionContextStore:
+    """Expose graph relations without leaking Neo4j into reflection orchestration."""
+    return get_graph_store()
+
+
+@lru_cache
+def get_reflection_store() -> FileReflectionStore:
+    return FileReflectionStore(get_settings().reflections_path)
+
+
+@lru_cache
+def get_reflection_provider() -> ReflectionProvider:
+    settings = get_settings()
+    model = settings.openai_reflection_model or settings.openai_model
+    if settings.reflection_provider == "openai":
+        return OpenAIReflectionProvider(settings.openai_api_key, model)
+    return UnavailableReflectionProvider(settings.reflection_provider, model or "unconfigured")
 
 
 @lru_cache
@@ -118,6 +142,15 @@ async def get_extract_persist_and_embed_document() -> ExtractPersistAndEmbedDocu
 async def get_search_similar_claims() -> SearchSimilarClaims:
     """Build semantic retrieval without exposing providers or Neo4j to routes."""
     return SearchSimilarClaims(get_embedding_provider(), get_claim_embedding_store())
+
+
+async def get_resolve_question() -> ResolveQuestion:
+    return ResolveQuestion(
+        await get_search_similar_claims(),
+        get_reflection_context_store(),
+        get_reflection_provider(),
+        get_reflection_store(),
+    )
 
 
 async def get_ingest_and_extract_document() -> IngestAndExtractDocument:

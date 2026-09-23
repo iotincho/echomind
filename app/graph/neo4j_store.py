@@ -12,14 +12,19 @@ from app.embeddings.contracts import (
     SimilarClaim,
 )
 from app.extraction.contracts import ExtractionResult
+from app.reflection.contracts import ClaimRelation
 from app.services.claim_embedding_store import ClaimEmbeddingStore, ClaimEmbeddingStoreError
 from app.services.extraction_store import ExtractionRun
 from app.services.graph_store import GraphPersistenceError, GraphStore
+from app.services.reflection_context_store import (
+    ReflectionContextStore,
+    ReflectionContextStoreError,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore):
+class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore, ReflectionContextStore):
     """Persist each immutable extraction run without canonicalizing knowledge yet."""
 
     def __init__(self, uri: str, username: str, password: str, driver: Any | None = None) -> None:
@@ -176,6 +181,47 @@ class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore):
                 type(error).__name__,
             )
             raise ClaimEmbeddingStoreError("Neo4j claim embedding search failed") from error
+
+    def get_claim_relations(self, claim_ids: list[str]) -> list[ClaimRelation]:
+        if not claim_ids:
+            return []
+        try:
+            with self._get_driver().session() as session:
+                records = session.run(
+                    """
+                    MATCH (source:Claim)-
+                        [relationship:ABOUT|RELATES_TO|SUPPORTS|CONTRADICTS]->(target)
+                    WHERE source.id IN $claim_ids
+                    RETURN source.id AS source_claim_id,
+                           type(relationship) AS relation_type,
+                           target.id AS target_id,
+                           CASE
+                               WHEN target:Claim THEN 'claim'
+                               WHEN target:Concept THEN 'concept'
+                               WHEN target:Entity THEN 'entity'
+                               ELSE 'unknown'
+                           END AS target_kind,
+                           coalesce(target.text, target.name) AS target_text
+                    ORDER BY source_claim_id, relation_type, target_id
+                    """,
+                    claim_ids=claim_ids,
+                )
+                relations = [ClaimRelation(**record.data()) for record in records]
+            logger.info(
+                "reflection_graph_context_completed claim_count=%s relation_count=%s",
+                len(claim_ids),
+                len(relations),
+            )
+            return relations
+        except Exception as error:
+            logger.exception(
+                "reflection_graph_context_failed claim_count=%s error_type=%s",
+                len(claim_ids),
+                type(error).__name__,
+            )
+            raise ReflectionContextStoreError(
+                "Neo4j reflection context retrieval failed"
+            ) from error
 
     def _get_driver(self) -> Any:
         if self._driver is None:

@@ -331,7 +331,9 @@ La arquitectura debe mantenerse limpia y tipada, pero sin sobreingeniería mient
 7. **Experiments:** batería de preguntas reales para evaluar utilidad, precisión y alucinaciones.
 8. **Mobile/API:** únicamente cuando el motor demuestre valor.
 
-La implementación actual de la fase 4 y consultas de inspección están documentadas en el [README de persistencia de grafo](app/graph/README.md).
+La persistencia de grafo está documentada en el [README de grafo](app/graph/README.md),
+la recuperación vectorial en el [README de embeddings](app/embeddings/README.md) y la
+resolución en el [README de reflexión](app/reflection/README.md).
 
 ## Primer hito técnico
 
