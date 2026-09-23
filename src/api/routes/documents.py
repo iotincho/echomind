@@ -1,8 +1,9 @@
 """Document-ingestion HTTP endpoints."""
 
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from src.api.schemas.documents import (
     CreateDocumentRequest,
@@ -57,10 +58,11 @@ async def create_document_from_file(
     file: Annotated[UploadFile, File(description="UTF-8 Markdown or plain-text note")],
     file_use_case: Annotated[IngestDocumentFile, Depends(get_ingest_document_file)],
     use_case: Annotated[IngestAndExtractDocument, Depends(get_ingest_and_extract_document)],
+    document_id: Annotated[UUID | None, Form()] = None,
 ) -> ProcessedDocumentResponse:
     """Store and immediately extract from an uploaded `.md` or `.txt` note."""
     try:
-        new_document = file_use_case.build_new_document(file.filename, await file.read())
+        new_document = file_use_case.build_new_document(file.filename, await file.read(), document_id)
     except UnsupportedDocumentFileError as error:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,

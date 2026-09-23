@@ -1,6 +1,7 @@
 """Turn an uploaded UTF-8 text file into an original Document."""
 
 from pathlib import Path
+from uuid import UUID
 
 from src.domain.documents import Document, NewDocument
 from src.services.document_store import DocumentStore
@@ -23,7 +24,9 @@ class IngestDocumentFile:
     def __init__(self, document_store: DocumentStore) -> None:
         self._ingest_document = IngestDocument(document_store)
 
-    def build_new_document(self, filename: str | None, content: bytes) -> NewDocument:
+    def build_new_document(
+        self, filename: str | None, content: bytes, document_id: UUID | None = None
+    ) -> NewDocument:
         """Validate an upload and translate it into the provider-neutral input model."""
         if not filename:
             raise UnsupportedDocumentFileError("A filename is required")
@@ -45,6 +48,7 @@ class IngestDocumentFile:
             content=text_content,
             source="file_upload",
             metadata={"filename": safe_filename, "format": extension.removeprefix(".")},
+            id=document_id,
         )
 
     def execute(self, filename: str | None, content: bytes) -> Document:
