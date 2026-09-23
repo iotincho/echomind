@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 from app.domain.documents import Document, NewDocument
 from app.services.extraction_store import ExtractionRun
-from app.use_cases.extract_and_persist_document import ExtractAndPersistDocument
+from app.use_cases.extract_persist_and_embed_document import ExtractPersistAndEmbedDocument
 from app.use_cases.ingest_document import IngestDocument
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class IngestAndExtractDocument:
     def __init__(
         self,
         ingest_document: IngestDocument,
-        extract_document: ExtractAndPersistDocument,
+        extract_document: ExtractPersistAndEmbedDocument,
     ) -> None:
         self._ingest_document = ingest_document
         self._extract_document = extract_document

@@ -12,6 +12,7 @@ from app.api.schemas.documents import (
 from app.dependencies import get_ingest_and_extract_document, get_ingest_document_file
 from app.domain.documents import NewDocument
 from app.services.document_store import DocumentAlreadyExistsError
+from app.use_cases.embed_claims import ClaimEmbeddingFailedError
 from app.use_cases.extract_and_persist_document import GraphPersistenceFailedError
 from app.use_cases.extract_document import ExtractionRunFailedError
 from app.use_cases.ingest_and_extract_document import IngestAndExtractDocument
@@ -38,6 +39,8 @@ async def create_document(
         raise _extraction_failed_response(error) from error
     except GraphPersistenceFailedError as error:
         raise _graph_persistence_failed_response(error) from error
+    except ClaimEmbeddingFailedError as error:
+        raise _claim_embedding_failed_response(error) from error
 
     return ProcessedDocumentResponse(
         document=DocumentResponse(**processed.document.model_dump()),
@@ -77,6 +80,8 @@ async def create_document_from_file(
         raise _extraction_failed_response(error) from error
     except GraphPersistenceFailedError as error:
         raise _graph_persistence_failed_response(error) from error
+    except ClaimEmbeddingFailedError as error:
+        raise _claim_embedding_failed_response(error) from error
 
     return ProcessedDocumentResponse(
         document=DocumentResponse(**processed.document.model_dump()),
@@ -102,5 +107,16 @@ def _graph_persistence_failed_response(error: GraphPersistenceFailedError) -> HT
         detail={
             "message": "Document was extracted but graph persistence failed",
             "run_id": str(error.run_id),
+        },
+    )
+
+
+def _claim_embedding_failed_response(error: ClaimEmbeddingFailedError) -> HTTPException:
+    """Tell callers that a completed extraction is not yet semantically searchable."""
+    return HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail={
+            "message": "Document was extracted but claim embeddings failed",
+            "run_id": error.run_id,
         },
     )

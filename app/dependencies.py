@@ -4,19 +4,24 @@ from functools import lru_cache
 
 from app.config import get_settings
 from app.graph.neo4j_store import Neo4jGraphStore
+from app.services.claim_embedding_store import ClaimEmbeddingStore
 from app.services.document_store import FileDocumentStore
+from app.services.embedding_provider import EmbeddingProvider, UnavailableEmbeddingProvider
 from app.services.extraction_store import FileExtractionStore
-from app.services.graph_store import GraphStore
+from app.services.openai_embedding_provider import OpenAIEmbeddingProvider
 from app.services.openai_extractor import OpenAIExtractor
 from app.services.structured_extractor import (
     StructuredExtractor,
     UnavailableStructuredExtractor,
 )
+from app.use_cases.embed_claims import EmbedClaims
 from app.use_cases.extract_and_persist_document import ExtractAndPersistDocument
 from app.use_cases.extract_document import ExtractDocument
+from app.use_cases.extract_persist_and_embed_document import ExtractPersistAndEmbedDocument
 from app.use_cases.ingest_and_extract_document import IngestAndExtractDocument
 from app.use_cases.ingest_document import IngestDocument
 from app.use_cases.ingest_document_file import IngestDocumentFile
+from app.use_cases.search_similar_claims import SearchSimilarClaims
 
 
 @lru_cache
@@ -41,13 +46,35 @@ def get_structured_extractor() -> StructuredExtractor:
 
 
 @lru_cache
-def get_graph_store() -> GraphStore:
+def get_graph_store() -> Neo4jGraphStore:
     """Provide the Neo4j adapter while keeping Cypher out of application use cases."""
     settings = get_settings()
     return Neo4jGraphStore(
         settings.neo4j_uri,
         settings.neo4j_username,
         settings.neo4j_password,
+    )
+
+
+def get_claim_embedding_store() -> ClaimEmbeddingStore:
+    """Reuse Neo4j for the graph and claim-vector persistence boundaries."""
+    return get_graph_store()
+
+
+@lru_cache
+def get_embedding_provider() -> EmbeddingProvider:
+    """Select an embedding provider independently of the extraction provider."""
+    settings = get_settings()
+    if settings.embedding_provider == "openai":
+        return OpenAIEmbeddingProvider(
+            settings.openai_api_key,
+            settings.openai_embedding_model,
+            settings.openai_embedding_dimensions,
+        )
+    return UnavailableEmbeddingProvider(
+        settings.embedding_provider,
+        settings.openai_embedding_model,
+        settings.openai_embedding_dimensions,
     )
 
 
@@ -80,9 +107,22 @@ async def get_extract_and_persist_document() -> ExtractAndPersistDocument:
     return ExtractAndPersistDocument(await get_extract_document(), get_graph_store())
 
 
+async def get_extract_persist_and_embed_document() -> ExtractPersistAndEmbedDocument:
+    """Build the default flow that makes extracted claims semantically searchable."""
+    return ExtractPersistAndEmbedDocument(
+        await get_extract_and_persist_document(),
+        EmbedClaims(get_embedding_provider(), get_claim_embedding_store()),
+    )
+
+
+async def get_search_similar_claims() -> SearchSimilarClaims:
+    """Build semantic retrieval without exposing providers or Neo4j to routes."""
+    return SearchSimilarClaims(get_embedding_provider(), get_claim_embedding_store())
+
+
 async def get_ingest_and_extract_document() -> IngestAndExtractDocument:
     """Build the default processing flow triggered by every new document."""
     return IngestAndExtractDocument(
         IngestDocument(get_document_store()),
-        await get_extract_and_persist_document(),
+        await get_extract_persist_and_embed_document(),
     )

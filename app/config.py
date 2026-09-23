@@ -26,6 +26,16 @@ class Settings(BaseSettings):
     llm_provider: str = Field(default="openai", validation_alias="LLM_PROVIDER")
     openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY", repr=False)
     openai_model: str | None = Field(default=None, validation_alias="OPENAI_MODEL")
+    embedding_provider: str = Field(default="openai", validation_alias="EMBEDDING_PROVIDER")
+    openai_embedding_model: str = Field(
+        default="text-embedding-3-small",
+        validation_alias="OPENAI_EMBEDDING_MODEL",
+    )
+    openai_embedding_dimensions: int = Field(
+        default=1536,
+        validation_alias="OPENAI_EMBEDDING_DIMENSIONS",
+        gt=0,
+    )
 
 
 @lru_cache

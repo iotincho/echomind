@@ -224,4 +224,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Others
 _app_data/
+.bevel/
+.vscode/
+

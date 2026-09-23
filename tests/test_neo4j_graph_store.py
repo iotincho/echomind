@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from app.domain.documents import Document
+from app.embeddings.contracts import EmbeddingSpec
 from app.extraction.contracts import (
     Claim,
     ClaimType,
@@ -17,8 +18,25 @@ from app.services.extraction_store import new_extraction_run
 
 
 class FakeResult:
+    def __init__(self, records: list["FakeRecord"] | None = None) -> None:
+        self._records = records or []
+
     def consume(self) -> None:
         return None
+
+    def single(self) -> dict[str, int]:
+        return {"persisted_count": 1}
+
+    def __iter__(self):
+        return iter(self._records)
+
+
+class FakeRecord:
+    def __init__(self, values: dict) -> None:
+        self._values = values
+
+    def data(self) -> dict:
+        return self._values
 
 
 class FakeTransaction:
@@ -41,7 +59,7 @@ class FakeSession:
     def __exit__(self, *_):
         return None
 
-    def run(self, query: str) -> FakeResult:
+    def run(self, query: str, **_parameters) -> FakeResult:
         self.schema_queries.append(query)
         return FakeResult()
 
@@ -115,4 +133,42 @@ def test_neo4j_graph_store_persists_items_relationships_and_evidence() -> None:
     assert "MERGE (item:Claim" in queries
     assert "relationship:ABOUT" in queries
     assert "MERGE (evidence:Evidence" in queries
-    assert len(driver.session_instance.schema_queries) == 6
+    assert len(driver.session_instance.schema_queries) == 7
+
+
+def test_neo4j_graph_store_search_keeps_run_in_cypher_scope() -> None:
+    class SearchSession(FakeSession):
+        def run(self, query: str, **parameters) -> FakeResult:
+            self.schema_queries.append(query)
+            if "db.index.vector.queryNodes" not in query:
+                return FakeResult()
+            assert parameters["index_name"] == "claim_embedding_6b9a3a1fa395f70b"
+            return FakeResult(
+                [
+                    FakeRecord(
+                        {
+                            "claim_id": "run:claim:claim_1",
+                            "claim_local_id": "claim_1",
+                            "document_id": "document",
+                            "run_id": "run",
+                            "profile_name": "v3",
+                            "prompt_version": "v3",
+                            "text": "Quiero más autonomía.",
+                            "type": "desire",
+                            "score": 0.9,
+                            "evidence": [],
+                        }
+                    )
+                ]
+            )
+
+    class SearchDriver(FakeDriver):
+        def __init__(self) -> None:
+            self.session_instance = SearchSession()
+
+    spec = EmbeddingSpec(provider="openai", model="text-embedding-3-small", dimensions=1536)
+    results = Neo4jGraphStore(
+        "bolt://graph:7687", "neo4j", "password", driver=SearchDriver()
+    ).search_claim_embeddings([0.0] * 1536, spec, limit=10)
+
+    assert results[0].profile_name == "v3"

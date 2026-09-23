@@ -1,15 +1,25 @@
 """Neo4j adapter for the evidence-backed extraction graph."""
 
 import json
+import logging
 from typing import Any
 
 from app.domain.documents import Document
+from app.embeddings.contracts import (
+    ClaimEmbeddingRecord,
+    EmbeddingSpec,
+    EvidenceReference,
+    SimilarClaim,
+)
 from app.extraction.contracts import ExtractionResult
+from app.services.claim_embedding_store import ClaimEmbeddingStore, ClaimEmbeddingStoreError
 from app.services.extraction_store import ExtractionRun
 from app.services.graph_store import GraphPersistenceError, GraphStore
 
+logger = logging.getLogger(__name__)
 
-class Neo4jGraphStore(GraphStore):
+
+class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore):
     """Persist each immutable extraction run without canonicalizing knowledge yet."""
 
     def __init__(self, uri: str, username: str, password: str, driver: Any | None = None) -> None:
@@ -18,16 +28,34 @@ class Neo4jGraphStore(GraphStore):
         self._password = password
         self._driver = driver
         self._schema_initialized = False
+        self._vector_indices: set[str] = set()
 
     def persist(self, document: Document, extraction: ExtractionRun) -> None:
         if extraction.status != "completed" or extraction.result is None:
             raise GraphPersistenceError("Only completed extractions can be persisted in Neo4j")
 
         driver = self._get_driver()
+        result = extraction.result
+        logger.info(
+            "graph_persistence_started document_id=%s run_id=%s concepts=%s entities=%s "
+            "claims=%s relationships=%s",
+            document.id,
+            extraction.id,
+            len(result.concepts),
+            len(result.entities),
+            len(result.claims),
+            len(result.relationships),
+        )
         try:
             with driver.session() as session:
                 self._initialize_schema(session)
                 session.execute_write(self._write_extraction, document, extraction)
+            logger.info(
+                "graph_persistence_completed document_id=%s run_id=%s relationships=%s",
+                document.id,
+                extraction.id,
+                len(result.relationships),
+            )
         except GraphPersistenceError:
             raise
         except Exception as error:
@@ -36,6 +64,118 @@ class Neo4jGraphStore(GraphStore):
     def close(self) -> None:
         if self._driver is not None:
             self._driver.close()
+
+    def persist_claim_embeddings(
+        self,
+        records: list[ClaimEmbeddingRecord],
+        spec: EmbeddingSpec,
+    ) -> None:
+        if not records:
+            return
+        if any(
+            record.spec != spec or len(record.vector) != spec.dimensions for record in records
+        ):
+            raise ClaimEmbeddingStoreError(
+                "Claim embedding record does not match its specification"
+            )
+        index_name = self._vector_index_name(spec)
+        logger.info(
+            "claim_embeddings_persist_started records=%s provider=%s model=%s dimensions=%s "
+            "index_name=%s",
+            len(records),
+            spec.provider,
+            spec.model,
+            spec.dimensions,
+            index_name,
+        )
+        try:
+            with self._get_driver().session() as session:
+                self._initialize_schema(session)
+                self._initialize_vector_index(session, spec)
+                session.execute_write(self._write_claim_embeddings, records, spec)
+            logger.info(
+                "claim_embeddings_persist_completed records=%s index_name=%s",
+                len(records),
+                index_name,
+            )
+        except ClaimEmbeddingStoreError:
+            raise
+        except Exception as error:
+            raise ClaimEmbeddingStoreError("Neo4j claim embedding persistence failed") from error
+
+    def search_claim_embeddings(
+        self,
+        vector: list[float],
+        spec: EmbeddingSpec,
+        limit: int,
+    ) -> list[SimilarClaim]:
+        if len(vector) != spec.dimensions or limit < 1:
+            raise ClaimEmbeddingStoreError("Invalid vector-search request")
+        index_name = self._vector_index_name(spec)
+        logger.info(
+            "claim_vector_search_started provider=%s model=%s dimensions=%s "
+            "vector_dimensions=%s limit=%s index_name=%s",
+            spec.provider,
+            spec.model,
+            spec.dimensions,
+            len(vector),
+            limit,
+            index_name,
+        )
+        try:
+            with self._get_driver().session() as session:
+                self._initialize_schema(session)
+                self._initialize_vector_index(session, spec)
+                records = session.run(
+                    """
+                    CALL db.index.vector.queryNodes($index_name, $limit, $vector)
+                    YIELD node, score
+                    MATCH (claim:Claim)-[:HAS_EMBEDDING]->(node)
+                    MATCH (run:ExtractionRun {id: claim.run_id})
+                    OPTIONAL MATCH (claim)-[:SUPPORTED_BY]->(evidence:Evidence)
+                    WITH claim, run, score, collect(evidence) AS evidence_nodes
+                    RETURN claim.id AS claim_id,
+                           claim.local_id AS claim_local_id,
+                           claim.document_id AS document_id,
+                           claim.run_id AS run_id,
+                           run.profile_name AS profile_name,
+                           run.prompt_version AS prompt_version,
+                           claim.text AS text,
+                           claim.type AS type,
+                           score,
+                           [item IN evidence_nodes | {
+                               quote: item.quote,
+                               start_line: item.start_line,
+                               end_line: item.end_line
+                           }] AS evidence
+                    ORDER BY score DESC
+                    """,
+                    index_name=index_name,
+                    limit=limit,
+                    vector=vector,
+                )
+                claims = [self._similar_claim(record.data()) for record in records]
+            logger.info(
+                "claim_vector_search_completed index_name=%s result_count=%s",
+                index_name,
+                len(claims),
+            )
+            return claims
+        except ClaimEmbeddingStoreError:
+            raise
+        except Exception as error:
+            logger.exception(
+                "claim_vector_search_failed provider=%s model=%s dimensions=%s "
+                "vector_dimensions=%s limit=%s index_name=%s error_type=%s",
+                spec.provider,
+                spec.model,
+                spec.dimensions,
+                len(vector),
+                limit,
+                index_name,
+                type(error).__name__,
+            )
+            raise ClaimEmbeddingStoreError("Neo4j claim embedding search failed") from error
 
     def _get_driver(self) -> Any:
         if self._driver is None:
@@ -75,9 +215,44 @@ class Neo4jGraphStore(GraphStore):
                 "CREATE CONSTRAINT evidence_id IF NOT EXISTS "
                 "FOR (node:Evidence) REQUIRE node.id IS UNIQUE"
             ),
+            (
+                "CREATE CONSTRAINT claim_embedding_id IF NOT EXISTS "
+                "FOR (node:ClaimEmbedding) REQUIRE node.id IS UNIQUE"
+            ),
         ):
             session.run(query).consume()
         self._schema_initialized = True
+
+    def _initialize_vector_index(self, session: Any, spec: EmbeddingSpec) -> None:
+        index_name = self._vector_index_name(spec)
+        if index_name in self._vector_indices:
+            return
+        label = self._vector_label(spec)
+        session.run(
+            f"""
+            CREATE VECTOR INDEX {index_name} IF NOT EXISTS
+            FOR (node:{label}) ON node.vector
+            OPTIONS {{indexConfig: {{
+                `vector.dimensions`: {spec.dimensions},
+                `vector.similarity_function`: 'cosine'
+            }}}}
+            """
+        ).consume()
+        self._vector_indices.add(index_name)
+        logger.info(
+            "claim_vector_index_ensured index_name=%s label=%s dimensions=%s",
+            index_name,
+            label,
+            spec.dimensions,
+        )
+
+    @staticmethod
+    def _vector_index_name(spec: EmbeddingSpec) -> str:
+        return f"claim_embedding_{spec.index_suffix}"
+
+    @staticmethod
+    def _vector_label(spec: EmbeddingSpec) -> str:
+        return f"ClaimEmbedding_{spec.index_suffix}"
 
     @staticmethod
     def _write_extraction(transaction: Any, document: Document, extraction: ExtractionRun) -> None:
@@ -196,7 +371,15 @@ class Neo4jGraphStore(GraphStore):
             )
 
         for relation_type, rows in rows_by_type.items():
-            transaction.run(
+            logger.info(
+                "graph_relationships_write_started run_id=%s document_id=%s "
+                "relationship_type=%s count=%s",
+                run_id,
+                document_id,
+                relation_type,
+                len(rows),
+            )
+            write_result = transaction.run(
                 f"""
                 UNWIND $rows AS row
                 MATCH (source {{id: row.source_id}}), (target {{id: row.target_id}})
@@ -204,8 +387,25 @@ class Neo4jGraphStore(GraphStore):
                 SET relationship.run_id = row.run_id,
                     relationship.document_id = row.document_id,
                     relationship.evidence_json = row.evidence_json
+                RETURN count(relationship) AS persisted_count
                 """,
                 rows=rows,
+            )
+            persisted_count = write_result.single()["persisted_count"]
+            logger.info(
+                "graph_relationships_write_completed run_id=%s relationship_type=%s "
+                "requested_count=%s persisted_count=%s",
+                run_id,
+                relation_type,
+                len(rows),
+                persisted_count,
+            )
+        if not rows_by_type:
+            logger.info(
+                "graph_relationships_skipped run_id=%s document_id=%s "
+                "reason=no_extracted_relationships",
+                run_id,
+                document_id,
             )
 
     @staticmethod
@@ -249,4 +449,74 @@ class Neo4jGraphStore(GraphStore):
             MERGE (evidence)-[:FROM_DOCUMENT]->(document)
             """,
             rows=rows,
+        )
+
+    @staticmethod
+    def _write_claim_embeddings(
+        transaction: Any,
+        records: list[ClaimEmbeddingRecord],
+        spec: EmbeddingSpec,
+    ) -> None:
+        rows = [
+            {
+                "id": record.id,
+                "claim_graph_id": record.claim_graph_id,
+                "claim_local_id": record.claim_local_id,
+                "document_id": record.document_id,
+                "run_id": record.run_id,
+                "profile_name": record.profile_name,
+                "prompt_version": record.prompt_version,
+                "text_hash": record.text_hash,
+                "vector": record.vector,
+                "provider": record.spec.provider,
+                "model": record.spec.model,
+                "dimensions": record.spec.dimensions,
+                "created_at": record.created_at.isoformat(),
+            }
+            for record in records
+        ]
+        write_result = transaction.run(
+            f"""
+            UNWIND $rows AS row
+            MERGE (embedding:ClaimEmbedding:{Neo4jGraphStore._vector_label(spec)} {{id: row.id}})
+            SET embedding.claim_graph_id = row.claim_graph_id,
+                embedding.claim_local_id = row.claim_local_id,
+                embedding.document_id = row.document_id,
+                embedding.run_id = row.run_id,
+                embedding.profile_name = row.profile_name,
+                embedding.prompt_version = row.prompt_version,
+                embedding.text_hash = row.text_hash,
+                embedding.vector = row.vector,
+                embedding.provider = row.provider,
+                embedding.model = row.model,
+                embedding.dimensions = row.dimensions,
+                embedding.created_at = row.created_at
+            WITH embedding, row
+            MATCH (claim:Claim {{id: row.claim_graph_id}})
+            MERGE (claim)-[:HAS_EMBEDDING]->(embedding)
+            RETURN count(embedding) AS persisted_count
+            """,
+            rows=rows,
+        )
+        logger.info(
+            "claim_embedding_links_write_completed requested_count=%s persisted_count=%s "
+            "index_name=%s",
+            len(records),
+            write_result.single()["persisted_count"],
+            Neo4jGraphStore._vector_index_name(spec),
+        )
+
+    @staticmethod
+    def _similar_claim(record: dict[str, Any]) -> SimilarClaim:
+        return SimilarClaim(
+            claim_id=record["claim_id"],
+            claim_local_id=record["claim_local_id"],
+            document_id=record["document_id"],
+            run_id=record["run_id"],
+            profile_name=record["profile_name"],
+            prompt_version=record["prompt_version"],
+            text=record["text"],
+            type=record["type"],
+            score=record["score"],
+            evidence=[EvidenceReference(**evidence) for evidence in record["evidence"]],
         )

@@ -39,3 +39,7 @@ class ExtractAndPersistDocument:
             )
             raise GraphPersistenceFailedError(extraction.id) from error
         return extraction
+
+    def get_document(self, document_id: UUID):
+        """Expose preserved input to the embedding composition use case."""
+        return self._extract_document.get_document(document_id)
