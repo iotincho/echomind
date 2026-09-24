@@ -145,8 +145,9 @@ class Neo4jGraphStore(
                     YIELD node, score
                     MATCH (claim:Claim)-[:HAS_EMBEDDING]->(node)
                     MATCH (run:ExtractionRun {id: claim.run_id})
+                    MATCH (document:Document {id: claim.document_id})
                     OPTIONAL MATCH (claim)-[:SUPPORTED_BY]->(evidence:Evidence)
-                    WITH claim, run, score, collect(evidence) AS evidence_nodes
+                    WITH claim, run, document, score, collect(evidence) AS evidence_nodes
                     RETURN claim.id AS claim_id,
                            claim.local_id AS claim_local_id,
                            claim.document_id AS document_id,
@@ -155,6 +156,9 @@ class Neo4jGraphStore(
                            run.prompt_version AS prompt_version,
                            claim.text AS text,
                            claim.type AS type,
+                           document.source AS document_source,
+                           document.metadata_json AS document_metadata_json,
+                           document.created_at AS document_created_at,
                            score,
                            [item IN evidence_nodes | {
                                quote: item.quote,
@@ -707,6 +711,9 @@ class Neo4jGraphStore(
             type=record["type"],
             score=record["score"],
             evidence=[EvidenceReference(**evidence) for evidence in record["evidence"]],
+            document_source=record.get("document_source"),
+            document_metadata=json.loads(record.get("document_metadata_json") or "{}"),
+            document_created_at=record.get("document_created_at"),
         )
 
     def delete_document(self, document_id: str) -> None:

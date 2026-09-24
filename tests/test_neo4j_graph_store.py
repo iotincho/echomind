@@ -155,6 +155,9 @@ def test_neo4j_graph_store_search_keeps_run_in_cypher_scope() -> None:
                             "prompt_version": "v3",
                             "text": "Quiero más autonomía.",
                             "type": "desire",
+                            "document_source": "test",
+                            "document_metadata_json": '{"filename": "note.md"}',
+                            "document_created_at": "2026-01-01T00:00:00+00:00",
                             "score": 0.9,
                             "evidence": [],
                         }
@@ -167,11 +170,16 @@ def test_neo4j_graph_store_search_keeps_run_in_cypher_scope() -> None:
             self.session_instance = SearchSession()
 
     spec = EmbeddingSpec(provider="openai", model="text-embedding-3-small", dimensions=1536)
+    driver = SearchDriver()
     results = Neo4jGraphStore(
-        "bolt://graph:7687", "neo4j", "password", driver=SearchDriver()
+        "bolt://graph:7687", "neo4j", "password", driver=driver
     ).search_claim_embeddings([0.0] * 1536, spec, limit=10)
 
     assert results[0].profile_name == "v3"
+    assert results[0].document_metadata == {"filename": "note.md"}
+    assert results[0].document_created_at == datetime(2026, 1, 1, tzinfo=UTC)
+    query = driver.session_instance.schema_queries[-1]
+    assert "document.metadata_json AS document_metadata_json" in query
 
 
 def test_neo4j_graph_store_persists_and_searches_document_embeddings() -> None:

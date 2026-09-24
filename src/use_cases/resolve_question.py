@@ -3,6 +3,7 @@
 import logging
 
 from src.reflection.contracts import ReflectionContext, ReflectionResult
+from src.reflection.document_context import build_document_context
 from src.reflection.profiles import get_profile
 from src.services.reflection_context_store import (
     ReflectionContextStore,
@@ -74,7 +75,14 @@ class ResolveQuestion:
             self._store.save(run)
             return run
 
-        context = ReflectionContext(question=question, claims=candidates, relations=relations)
+        documents, metadata_definitions = build_document_context(candidates)
+        context = ReflectionContext(
+            question=question,
+            claims=candidates,
+            relations=relations,
+            documents=documents,
+            metadata_definitions=metadata_definitions,
+        )
         try:
             provider_reflection = self._provider.reflect(context, profile)
             self._validate_sources(provider_reflection.result, candidates)

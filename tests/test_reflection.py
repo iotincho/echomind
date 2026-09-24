@@ -4,6 +4,7 @@ import pytest
 
 from src.embeddings.contracts import SimilarClaim
 from src.reflection.contracts import ClaimRelation, ReflectionObservation, ReflectionResult
+from src.reflection.document_context import build_document_context
 from src.services.reflection_provider import ProviderReflection
 from src.services.reflection_store import FileReflectionStore
 from src.use_cases.resolve_question import ReflectionRunFailedError, ResolveQuestion
@@ -134,3 +135,24 @@ def test_resolve_question_returns_a_persisted_insufficient_evidence_result(tmp_p
     assert run.provider == "system"
     assert run.result is not None
     assert run.result.uncertainties
+
+
+def test_document_context_exposes_all_metadata_with_known_definitions() -> None:
+    candidate_with_metadata = candidate().model_copy(
+        update={
+            "document_source": "alex-diary",
+            "document_created_at": "2026-09-01T09:00:00-03:00",
+            "document_metadata": {
+                "note_number": "18",
+                "phase": "incremental",
+                "custom_field": "custom value",
+            },
+        }
+    )
+
+    documents, definitions = build_document_context([candidate_with_metadata])
+
+    assert documents[0].metadata == candidate_with_metadata.document_metadata
+    assert documents[0].created_at is not None
+    assert definitions["note_number"].description.startswith("Stable human reference")
+    assert definitions["custom_field"].value_type == "string"

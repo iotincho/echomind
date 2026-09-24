@@ -61,6 +61,9 @@ class SimilarClaim(EmbeddingModel):
     type: str
     score: float
     evidence: list[EvidenceReference]
+    document_source: str | None = None
+    document_metadata: dict[str, str] = Field(default_factory=dict)
+    document_created_at: datetime | None = None
     target: Literal["claim"] = "claim"
 
 
