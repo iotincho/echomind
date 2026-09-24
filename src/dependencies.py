@@ -159,3 +159,11 @@ async def get_ingest_and_extract_document() -> IngestAndExtractDocument:
         IngestDocument(get_document_store()),
         await get_extract_persist_and_embed_document(),
     )
+
+async def get_delete_document():
+    from src.use_cases.delete_document import DeleteDocument
+    return DeleteDocument(get_document_store(), get_extraction_store(), get_graph_store())
+
+async def get_list_documents():
+    from src.use_cases.list_documents import ListDocuments
+    return ListDocuments(get_document_store())

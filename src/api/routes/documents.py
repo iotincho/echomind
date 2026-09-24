@@ -10,13 +10,15 @@ from src.api.schemas.documents import (
     DocumentResponse,
     ProcessedDocumentResponse,
 )
-from src.dependencies import get_ingest_and_extract_document, get_ingest_document_file
+from src.dependencies import get_ingest_and_extract_document, get_ingest_document_file, get_delete_document, get_list_documents
 from src.domain.documents import NewDocument
 from src.services.document_store import DocumentAlreadyExistsError
 from src.use_cases.embed_claims import ClaimEmbeddingFailedError
 from src.use_cases.extract_and_persist_document import GraphPersistenceFailedError
 from src.use_cases.extract_document import ExtractionRunFailedError
 from src.use_cases.ingest_and_extract_document import IngestAndExtractDocument
+from src.use_cases.delete_document import DeleteDocument
+from src.use_cases.list_documents import ListDocuments
 from src.use_cases.ingest_document_file import (
     IngestDocumentFile,
     InvalidDocumentEncodingError,
@@ -24,6 +26,11 @@ from src.use_cases.ingest_document_file import (
 )
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+@router.get("", response_model=list[DocumentResponse])
+async def list_documents(use_case: Annotated[ListDocuments, Depends(get_list_documents)]) -> list[DocumentResponse]:
+    return [DocumentResponse(**document.model_dump()) for document in use_case.execute()]
 
 
 @router.post("", response_model=ProcessedDocumentResponse, status_code=status.HTTP_201_CREATED)
@@ -89,6 +96,14 @@ async def create_document_from_file(
         document=DocumentResponse(**processed.document.model_dump()),
         extraction=processed.extraction,
     )
+
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document(document_id: UUID, use_case: Annotated[DeleteDocument, Depends(get_delete_document)]) -> None:
+    try:
+        use_case.execute(document_id)
+    except DocumentNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
 
 
 def _extraction_failed_response(error: ExtractionRunFailedError) -> HTTPException:

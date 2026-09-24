@@ -566,3 +566,14 @@ class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore, ReflectionContextStore):
             score=record["score"],
             evidence=[EvidenceReference(**evidence) for evidence in record["evidence"]],
         )
+
+    def delete_document(self, document_id: str) -> None:
+        try:
+            with self._get_driver().session() as session:
+                session.execute_write(self._delete_document, document_id)
+        except Exception as error:
+            raise GraphPersistenceError("Neo4j document deletion failed") from error
+
+    @staticmethod
+    def _delete_document(transaction: Any, document_id: str) -> None:
+        transaction.run("MATCH (node) WHERE node.document_id = $document_id OR (node:Document AND node.id = $document_id) DETACH DELETE node", document_id=document_id).consume()

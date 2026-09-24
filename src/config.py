@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from pydantic import Field
+from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +39,12 @@ class Settings(BaseSettings):
         default="text-embedding-3-small",
         validation_alias="OPENAI_EMBEDDING_MODEL",
     )
+    auth_username: str | None = Field(default=None, validation_alias="ECHOMIND_AUTH_USERNAME")
+    auth_password: str | None = Field(default=None, validation_alias="ECHOMIND_AUTH_PASSWORD", repr=False)
+    auth_session_secret: str | None = Field(default=None, validation_alias="ECHOMIND_AUTH_SESSION_SECRET", repr=False)
+    auth_session_ttl_seconds: int = Field(default=604800, validation_alias="ECHOMIND_AUTH_SESSION_TTL_SECONDS", gt=0)
+    auth_cookie_secure: bool = Field(default=True, validation_alias="ECHOMIND_AUTH_COOKIE_SECURE")
+
     openai_embedding_dimensions: int = Field(
         default=1536,
         validation_alias="OPENAI_EMBEDDING_DIMENSIONS",

@@ -3,6 +3,7 @@
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+import shutil
 from typing import Literal, Protocol
 from uuid import UUID, uuid4
 
@@ -38,6 +39,8 @@ def new_extraction_run(**values: object) -> ExtractionRun:
 
 
 class ExtractionStore(Protocol):
+    def delete_for_document(self, document_id: object) -> None: ...
+
     def save(self, run: ExtractionRun) -> None:
         """Persist one immutable extraction attempt."""
 
@@ -47,6 +50,11 @@ class FileExtractionStore:
 
     def __init__(self, directory: Path) -> None:
         self._directory = directory
+
+    def delete_for_document(self, document_id: object) -> None:
+        directory = self._directory / str(document_id)
+        if directory.exists():
+            shutil.rmtree(directory)
 
     def save(self, run: ExtractionRun) -> None:
         directory = self._directory / str(run.document_id)

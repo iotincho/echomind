@@ -21,6 +21,10 @@ class DocumentStore(Protocol):
     def save(self, document: Document) -> None:
         """Persist one original document."""
 
+    def list(self) -> list[Document]: ...
+
+    def delete(self, document_id: object) -> None: ...
+
     def get(self, document_id: object) -> Document:
         """Retrieve one original document by its stable ID."""
 
@@ -43,6 +47,17 @@ class FileDocumentStore:
             encoding="utf-8",
         )
         temporary.replace(destination)
+
+    def list(self) -> list[Document]:
+        if not self._directory.exists():
+            return []
+        return sorted((Document.model_validate_json(path.read_text(encoding="utf-8")) for path in self._directory.glob("*.json")), key=lambda document: document.created_at, reverse=True)
+
+    def delete(self, document_id: object) -> None:
+        destination = self._directory / f"{document_id}.json"
+        if not destination.is_file():
+            raise DocumentNotFoundError(f"Document {document_id} was not found")
+        destination.unlink()
 
     def get(self, document_id: object) -> Document:
         destination = self._directory / f"{document_id}.json"
