@@ -133,7 +133,7 @@ def test_neo4j_graph_store_persists_items_relationships_and_evidence() -> None:
     assert "MERGE (item:Claim" in queries
     assert "relationship:ABOUT" in queries
     assert "MERGE (evidence:Evidence" in queries
-    assert len(driver.session_instance.schema_queries) == 7
+    assert len(driver.session_instance.schema_queries) == 8
 
 
 def test_neo4j_graph_store_search_keeps_run_in_cypher_scope() -> None:
@@ -172,3 +172,84 @@ def test_neo4j_graph_store_search_keeps_run_in_cypher_scope() -> None:
     ).search_claim_embeddings([0.0] * 1536, spec, limit=10)
 
     assert results[0].profile_name == "v3"
+
+
+def test_neo4j_graph_store_persists_and_searches_document_embeddings() -> None:
+    from src.embeddings.contracts import DocumentEmbeddingRecord
+
+    class DocumentSearchSession(FakeSession):
+        def run(self, query: str, **parameters) -> FakeResult:
+            self.schema_queries.append(query)
+            if "db.index.vector.queryNodes" not in query:
+                return FakeResult()
+            assert parameters["index_name"] == "document_embedding_6b9a3a1fa395f70b"
+            return FakeResult(
+                [
+                    FakeRecord(
+                        {
+                            "document_id": "document",
+                            "content": "Quiero más autonomía.",
+                            "source": "test",
+                            "metadata_json": '{"filename": "note.md"}',
+                            "created_at": "2026-01-01T00:00:00+00:00",
+                            "score": 0.9,
+                        }
+                    )
+                ]
+            )
+
+    class DocumentSearchDriver(FakeDriver):
+        def __init__(self) -> None:
+            self.session_instance = DocumentSearchSession()
+
+    spec = EmbeddingSpec(provider="openai", model="text-embedding-3-small", dimensions=1536)
+    driver = DocumentSearchDriver()
+    store = Neo4jGraphStore("bolt://graph:7687", "neo4j", "password", driver=driver)
+    record = DocumentEmbeddingRecord(
+        id="document:embedding:6b9a3a1fa395f70b:hash",
+        document_id="document",
+        text_hash="hash",
+        content="Quiero más autonomía.",
+        source="test",
+        metadata={"filename": "note.md"},
+        created_at=datetime.now(UTC),
+        vector=[0.0] * 1536,
+        spec=spec,
+    )
+
+    store.persist_document_embedding(record, spec)
+    results = store.search_document_embeddings([0.0] * 1536, spec, limit=10)
+
+    writes = "\n".join(query for query, _ in driver.session_instance.transaction.calls)
+    assert "MERGE (embedding:DocumentEmbedding" in writes
+    assert "MATCH (document:Document" in writes
+    assert results[0].target == "document"
+    assert results[0].metadata == {"filename": "note.md"}
+
+
+def test_neo4j_graph_store_persists_claim_embeddings_without_binding_self() -> None:
+    from src.embeddings.contracts import ClaimEmbeddingRecord
+
+    spec = EmbeddingSpec(provider="openai", model="text-embedding-3-small", dimensions=1536)
+    driver = FakeDriver()
+    store = Neo4jGraphStore("bolt://graph:7687", "neo4j", "password", driver=driver)
+    store.persist_claim_embeddings(
+        [
+            ClaimEmbeddingRecord(
+                id="claim:embedding",
+                claim_graph_id="run:claim:claim",
+                claim_local_id="claim",
+                document_id="document",
+                run_id="run",
+                profile_name="v3",
+                prompt_version="v3",
+                text_hash="hash",
+                vector=[0.0] * 1536,
+                spec=spec,
+            )
+        ],
+        spec,
+    )
+
+    writes = "\n".join(query for query, _ in driver.session_instance.transaction.calls)
+    assert "MERGE (embedding:ClaimEmbedding" in writes

@@ -15,6 +15,7 @@ from src.services.extraction_store import FileExtractionStore
 from src.services.graph_store import GraphStore
 from src.services.structured_extractor import ProviderExtraction, TokenUsage
 from src.use_cases.embed_claims import EmbedClaims
+from src.use_cases.embed_documents import EmbedDocument
 from src.use_cases.extract_and_persist_document import ExtractAndPersistDocument
 from src.use_cases.extract_document import ExtractDocument
 from src.use_cases.extract_persist_and_embed_document import ExtractPersistAndEmbedDocument
@@ -61,6 +62,12 @@ class FakeGraphStore(GraphStore):
     def search_claim_embeddings(self, vector, spec, limit):
         return []
 
+    def persist_document_embedding(self, record, spec) -> None:
+        return None
+
+    def search_document_embeddings(self, vector, spec, limit):
+        return []
+
 
 class FakeEmbeddingProvider(EmbeddingProvider):
     spec = EmbeddingSpec(provider="fake", model="fake-model", dimensions=2)
@@ -94,6 +101,7 @@ async def test_create_extraction_persists_the_completed_run_in_the_graph(tmp_pat
                 graph_store,
             ),
             EmbedClaims(FakeEmbeddingProvider(), graph_store),
+            EmbedDocument(FakeEmbeddingProvider(), graph_store),
         )
 
     app.dependency_overrides[get_extract_persist_and_embed_document] = (

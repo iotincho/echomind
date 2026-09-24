@@ -5,6 +5,7 @@ from functools import lru_cache
 from src.config import get_settings
 from src.graph.neo4j_store import Neo4jGraphStore
 from src.services.claim_embedding_store import ClaimEmbeddingStore
+from src.services.document_embedding_store import DocumentEmbeddingStore
 from src.services.document_store import FileDocumentStore
 from src.services.embedding_provider import EmbeddingProvider, UnavailableEmbeddingProvider
 from src.services.extraction_store import FileExtractionStore
@@ -19,6 +20,7 @@ from src.services.structured_extractor import (
     UnavailableStructuredExtractor,
 )
 from src.use_cases.embed_claims import EmbedClaims
+from src.use_cases.embed_documents import EmbedDocument
 from src.use_cases.extract_and_persist_document import ExtractAndPersistDocument
 from src.use_cases.extract_document import ExtractDocument
 from src.use_cases.extract_persist_and_embed_document import ExtractPersistAndEmbedDocument
@@ -26,6 +28,7 @@ from src.use_cases.ingest_and_extract_document import IngestAndExtractDocument
 from src.use_cases.ingest_document import IngestDocument
 from src.use_cases.ingest_document_file import IngestDocumentFile
 from src.use_cases.resolve_question import ResolveQuestion
+from src.use_cases.search_semantically import SearchSemantically
 from src.use_cases.search_similar_claims import SearchSimilarClaims
 
 
@@ -63,6 +66,11 @@ def get_graph_store() -> Neo4jGraphStore:
 
 def get_claim_embedding_store() -> ClaimEmbeddingStore:
     """Reuse Neo4j for the graph and claim-vector persistence boundaries."""
+    return get_graph_store()
+
+
+def get_document_embedding_store() -> DocumentEmbeddingStore:
+    """Reuse Neo4j for document-vector persistence and retrieval."""
     return get_graph_store()
 
 
@@ -136,12 +144,22 @@ async def get_extract_persist_and_embed_document() -> ExtractPersistAndEmbedDocu
     return ExtractPersistAndEmbedDocument(
         await get_extract_and_persist_document(),
         EmbedClaims(get_embedding_provider(), get_claim_embedding_store()),
+        EmbedDocument(get_embedding_provider(), get_document_embedding_store()),
     )
 
 
 async def get_search_similar_claims() -> SearchSimilarClaims:
     """Build semantic retrieval without exposing providers or Neo4j to routes."""
     return SearchSimilarClaims(get_embedding_provider(), get_claim_embedding_store())
+
+
+async def get_search_semantically() -> SearchSemantically:
+    """Build mixed document and claim retrieval without leaking Neo4j to routes."""
+    return SearchSemantically(
+        get_embedding_provider(),
+        get_claim_embedding_store(),
+        get_document_embedding_store(),
+    )
 
 
 async def get_resolve_question() -> ResolveQuestion:

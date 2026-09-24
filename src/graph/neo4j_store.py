@@ -7,13 +7,19 @@ from typing import Any
 from src.domain.documents import Document
 from src.embeddings.contracts import (
     ClaimEmbeddingRecord,
+    DocumentEmbeddingRecord,
     EmbeddingSpec,
     EvidenceReference,
     SimilarClaim,
+    SimilarDocument,
 )
 from src.extraction.contracts import ExtractionResult
 from src.reflection.contracts import ClaimRelation
 from src.services.claim_embedding_store import ClaimEmbeddingStore, ClaimEmbeddingStoreError
+from src.services.document_embedding_store import (
+    DocumentEmbeddingStore,
+    DocumentEmbeddingStoreError,
+)
 from src.services.extraction_store import ExtractionRun
 from src.services.graph_store import GraphPersistenceError, GraphStore
 from src.services.reflection_context_store import (
@@ -24,7 +30,9 @@ from src.services.reflection_context_store import (
 logger = logging.getLogger(__name__)
 
 
-class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore, ReflectionContextStore):
+class Neo4jGraphStore(
+    GraphStore, ClaimEmbeddingStore, DocumentEmbeddingStore, ReflectionContextStore
+):
     """Persist each immutable extraction run without canonicalizing knowledge yet."""
 
     def __init__(self, uri: str, username: str, password: str, driver: Any | None = None) -> None:
@@ -182,6 +190,63 @@ class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore, ReflectionContextStore):
             )
             raise ClaimEmbeddingStoreError("Neo4j claim embedding search failed") from error
 
+
+    def persist_document_embedding(
+        self,
+        record: DocumentEmbeddingRecord,
+        spec: EmbeddingSpec,
+    ) -> None:
+        if record.spec != spec or len(record.vector) != spec.dimensions:
+            raise DocumentEmbeddingStoreError(
+                "Document embedding record does not match its specification"
+            )
+        try:
+            with self._get_driver().session() as session:
+                self._initialize_schema(session)
+                self._initialize_document_vector_index(session, spec)
+                session.execute_write(self._write_document_embedding, record, spec)
+        except DocumentEmbeddingStoreError:
+            raise
+        except Exception as error:
+            raise DocumentEmbeddingStoreError(
+                "Neo4j document embedding persistence failed"
+            ) from error
+
+    def search_document_embeddings(
+        self,
+        vector: list[float],
+        spec: EmbeddingSpec,
+        limit: int,
+    ) -> list[SimilarDocument]:
+        if len(vector) != spec.dimensions or limit < 1:
+            raise DocumentEmbeddingStoreError("Invalid vector-search request")
+        index_name = self._document_vector_index_name(spec)
+        try:
+            with self._get_driver().session() as session:
+                self._initialize_schema(session)
+                self._initialize_document_vector_index(session, spec)
+                records = session.run(
+                    """
+                    CALL db.index.vector.queryNodes($index_name, $limit, $vector)
+                    YIELD node, score
+                    MATCH (document:Document)-[:HAS_EMBEDDING]->(node)
+                    RETURN document.id AS document_id,
+                           node.content AS content,
+                           node.source AS source,
+                           node.metadata_json AS metadata_json,
+                           node.created_at AS created_at,
+                           score
+                    ORDER BY score DESC
+                    """,
+                    index_name=index_name,
+                    limit=limit,
+                    vector=vector,
+                )
+                return [self._similar_document(record.data()) for record in records]
+        except DocumentEmbeddingStoreError:
+            raise
+        except Exception as error:
+            raise DocumentEmbeddingStoreError("Neo4j document embedding search failed") from error
     def get_claim_relations(self, claim_ids: list[str]) -> list[ClaimRelation]:
         if not claim_ids:
             return []
@@ -264,6 +329,10 @@ class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore, ReflectionContextStore):
             (
                 "CREATE CONSTRAINT claim_embedding_id IF NOT EXISTS "
                 "FOR (node:ClaimEmbedding) REQUIRE node.id IS UNIQUE"
+            ),
+            (
+                "CREATE CONSTRAINT document_embedding_id IF NOT EXISTS "
+                "FOR (node:DocumentEmbedding) REQUIRE node.id IS UNIQUE"
             ),
         ):
             session.run(query).consume()
@@ -497,6 +566,31 @@ class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore, ReflectionContextStore):
             rows=rows,
         )
 
+    def _initialize_document_vector_index(self, session: Any, spec: EmbeddingSpec) -> None:
+        index_name = self._document_vector_index_name(spec)
+        if index_name in self._vector_indices:
+            return
+        label = self._document_vector_label(spec)
+        session.run(
+            f"""
+            CREATE VECTOR INDEX {index_name} IF NOT EXISTS
+            FOR (node:{label}) ON node.vector
+            OPTIONS {{indexConfig: {{
+                `vector.dimensions`: {spec.dimensions},
+                `vector.similarity_function`: 'cosine'
+            }}}}
+            """
+        ).consume()
+        self._vector_indices.add(index_name)
+
+    @staticmethod
+    def _document_vector_index_name(spec: EmbeddingSpec) -> str:
+        return f"document_embedding_{spec.index_suffix}"
+
+    @staticmethod
+    def _document_vector_label(spec: EmbeddingSpec) -> str:
+        return f"DocumentEmbedding_{spec.index_suffix}"
+
     @staticmethod
     def _write_claim_embeddings(
         transaction: Any,
@@ -553,6 +647,54 @@ class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore, ReflectionContextStore):
         )
 
     @staticmethod
+    def _write_document_embedding(
+        transaction: Any,
+        record: DocumentEmbeddingRecord,
+        spec: EmbeddingSpec,
+    ) -> None:
+        embedding_label = Neo4jGraphStore._document_vector_label(spec)
+        transaction.run(
+            f"""
+            MERGE (embedding:DocumentEmbedding:{embedding_label} {{id: $id}})
+            SET embedding.document_id = $document_id,
+                embedding.text_hash = $text_hash,
+                embedding.content = $content,
+                embedding.source = $source,
+                embedding.metadata_json = $metadata_json,
+                embedding.created_at = $created_at,
+                embedding.vector = $vector,
+                embedding.provider = $provider,
+                embedding.model = $model,
+                embedding.dimensions = $dimensions
+            WITH embedding
+            MATCH (document:Document {{id: $document_id}})
+            MERGE (document)-[:HAS_EMBEDDING]->(embedding)
+            """,
+            id=record.id,
+            document_id=record.document_id,
+            text_hash=record.text_hash,
+            content=record.content,
+            source=record.source,
+            metadata_json=json.dumps(record.metadata, ensure_ascii=False, sort_keys=True),
+            created_at=record.created_at.isoformat(),
+            vector=record.vector,
+            provider=record.spec.provider,
+            model=record.spec.model,
+            dimensions=record.spec.dimensions,
+        ).consume()
+
+    @staticmethod
+    def _similar_document(record: dict[str, Any]) -> SimilarDocument:
+        return SimilarDocument(
+            document_id=record["document_id"],
+            content=record["content"],
+            source=record["source"],
+            metadata=json.loads(record["metadata_json"]),
+            created_at=record["created_at"],
+            score=record["score"],
+        )
+
+    @staticmethod
     def _similar_claim(record: dict[str, Any]) -> SimilarClaim:
         return SimilarClaim(
             claim_id=record["claim_id"],
@@ -576,4 +718,8 @@ class Neo4jGraphStore(GraphStore, ClaimEmbeddingStore, ReflectionContextStore):
 
     @staticmethod
     def _delete_document(transaction: Any, document_id: str) -> None:
-        transaction.run("MATCH (node) WHERE node.document_id = $document_id OR (node:Document AND node.id = $document_id) DETACH DELETE node", document_id=document_id).consume()
+        transaction.run(
+            "MATCH (node) WHERE node.document_id = $document_id "
+            "OR (node:Document AND node.id = $document_id) DETACH DELETE node",
+            document_id=document_id,
+        ).consume()

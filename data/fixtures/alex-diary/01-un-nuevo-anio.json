@@ -1,0 +1,15 @@
+{
+  "id": "d8e1a344-cac8-5a8b-a12b-51482d6b41a1",
+  "content": "Este año quiero hacer algunas cosas diferentes. Llevo bastante tiempo trabajando en la misma empresa y siento que estoy aprendiendo menos que antes.\n\nNo estoy particularmente descontento con mi trabajo, pero tengo la sensación de que estoy dejando pasar oportunidades.\n\nMe gustaría desarrollar algún proyecto propio. Hace tiempo que tengo ideas, pero nunca encuentro el momento para empezar.\n\nCreo que necesito tener más autonomía sobre mi tiempo y sobre las cosas en las que trabajo.",
+  "source": "synthetic_fixture",
+  "metadata": {
+    "dataset": "alex-diary",
+    "dataset_version": "1",
+    "note_number": "01",
+    "phase": "baseline",
+    "title": "Un nuevo año",
+    "language": "es-AR",
+    "author": "Alex (synthetic)"
+  },
+  "created_at": "2026-01-05T12:00:00-03:00"
+}

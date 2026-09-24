@@ -4,4 +4,4 @@ from pydantic import BaseModel, Field
 
 
 class CreateExtractionRequest(BaseModel):
-    profile: str = Field(default="v3", min_length=1)
+    profile: str = Field(default="v4", min_length=1)

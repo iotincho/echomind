@@ -2,7 +2,7 @@
 
 import hashlib
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -62,3 +62,30 @@ class SimilarClaim(EmbeddingModel):
     score: float
     evidence: list[EvidenceReference]
     target: Literal["claim"] = "claim"
+
+
+class DocumentEmbeddingRecord(EmbeddingModel):
+    """A versioned vector for the original document, independent of extraction output."""
+
+    id: str = Field(min_length=1)
+    document_id: str = Field(min_length=1)
+    text_hash: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    source: str = Field(min_length=1)
+    metadata: dict[str, str]
+    created_at: datetime
+    vector: list[float] = Field(min_length=1)
+    spec: EmbeddingSpec
+
+
+class SimilarDocument(EmbeddingModel):
+    document_id: str
+    content: str
+    source: str
+    metadata: dict[str, str]
+    created_at: datetime
+    score: float
+    target: Literal["document"] = "document"
+
+
+SearchResult = Annotated[SimilarClaim | SimilarDocument, Field(discriminator="target")]

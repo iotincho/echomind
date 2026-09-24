@@ -25,7 +25,7 @@ class ExtractAndPersistDocument:
         self._extract_document = extract_document
         self._graph_store = graph_store
 
-    def execute(self, document_id: UUID, profile_name: str = "v3") -> ExtractionRun:
+    def execute(self, document_id: UUID, profile_name: str = "v4") -> ExtractionRun:
         extraction = self._extract_document.execute(document_id, profile_name)
         document = self._extract_document.get_document(document_id)
         try:

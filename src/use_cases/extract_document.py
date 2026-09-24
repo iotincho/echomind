@@ -1,6 +1,7 @@
 """Run one versioned structured extraction without graph persistence."""
 
 import logging
+import unicodedata
 from uuid import UUID
 
 from src.extraction.contracts import (
@@ -44,7 +45,7 @@ class ExtractDocument:
         self._extraction_store = extraction_store
         self._extractor = extractor
 
-    def execute(self, document_id: UUID, profile_name: str = "v3") -> ExtractionRun:
+    def execute(self, document_id: UUID, profile_name: str = "v4") -> ExtractionRun:
         document = self._document_store.get(document_id)
         profile = get_profile(profile_name)
         provider_extraction = None
@@ -102,26 +103,39 @@ class ExtractDocument:
         """Expose the preserved source only to composed application use cases."""
         return self._document_store.get(document_id)
 
-
 def resolve_evidence(content: str, result: ExtractionResult) -> ExtractionResult:
-    """Locate each exact model-generated quote once, without trusting model offsets."""
+    """Locate evidence without trusting model offsets.
+
+    Matching is literal except for Unicode canonical equivalence. The saved quote is always
+    the exact slice from the original source, so whitespace and editorial changes still fail.
+    """
+
+    normalized_content = unicodedata.normalize("NFC", content)
+
+    def original_offset(normalized_offset: int) -> int:
+        for offset in range(len(content) + 1):
+            if len(unicodedata.normalize("NFC", content[:offset])) == normalized_offset:
+                return offset
+        raise ExtractionEvidenceError("Evidence location could not be mapped to the source")
 
     def resolve(evidence: Evidence) -> Evidence:
+        normalized_quote = unicodedata.normalize("NFC", evidence.quote)
         positions: list[int] = []
-        start = content.find(evidence.quote)
+        start = normalized_content.find(normalized_quote)
         while start != -1:
             positions.append(start)
-            start = content.find(evidence.quote, start + 1)
+            start = normalized_content.find(normalized_quote, start + 1)
 
         if not positions:
             raise ExtractionEvidenceError("Evidence quote does not occur in the source document")
         if len(positions) > 1:
             raise ExtractionEvidenceError("Evidence quote is ambiguous in the source document")
 
-        start_char = positions[0]
-        end_char = start_char + len(evidence.quote)
+        start_char = original_offset(positions[0])
+        end_char = original_offset(positions[0] + len(normalized_quote))
+        source_quote = content[start_char:end_char]
         return Evidence(
-            quote=evidence.quote,
+            quote=source_quote,
             start_char=start_char,
             end_char=end_char,
             start_line=content.count("\n", 0, start_char) + 1,

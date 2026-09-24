@@ -5,7 +5,7 @@ import pytest
 
 from src.domain.documents import Document, NewDocument
 from src.extraction.contracts import Concept, Evidence, ExtractionResult
-from src.extraction.profiles import V3_PROFILE
+from src.extraction.profiles import V3_PROFILE, V4_PROFILE
 from src.services.document_store import FileDocumentStore
 from src.services.extraction_store import FileExtractionStore
 from src.services.openai_extractor import OpenAIExtractor
@@ -72,7 +72,7 @@ def test_extract_document_records_a_versioned_completed_run(tmp_path) -> None:
     run = use_case.execute(document.id)
 
     assert run.status == "completed"
-    assert run.profile_name == "v3"
+    assert run.profile_name == "v4"
     assert run.schema_version == "v2"
     assert run.result is not None
     assert run.result.concepts[0].name == "autonomía"
@@ -142,6 +142,11 @@ def test_openai_extractor_uses_structured_output_contract() -> None:
     assert extraction.usage == TokenUsage(input_tokens=12, output_tokens=7)
 
 
+def test_v4_profile_forbids_editorial_evidence_notation() -> None:
+    assert "never use brackets" in V4_PROFILE.instructions
+    assert "mudarm[e]" in V4_PROFILE.instructions
+
+
 def test_v3_profile_requires_verbatim_evidence_quotes() -> None:
     assert "hard requirement" in V3_PROFILE.instructions
     assert "Never correct, normalize" in V3_PROFILE.instructions
@@ -198,3 +203,23 @@ def test_ingest_and_extract_logs_the_completed_result(tmp_path, caplog) -> None:
     assert processed.extraction.status == "completed"
     assert "extraction_completed" in caplog.text
     assert '"concepts"' in caplog.text
+
+
+def test_resolve_evidence_accepts_unicode_canonical_equivalence_and_preserves_source() -> None:
+    result = ExtractionResult(
+        concepts=[
+            Concept(
+                id="concept_1",
+                name="autonomía",
+                evidence=[Evidence(quote="autonomi\u0301a")],
+            )
+        ],
+        entities=[],
+        claims=[],
+        relationships=[],
+    )
+
+    resolved = resolve_evidence("Quiero más autonomía.", result)
+
+    assert resolved.concepts[0].evidence[0].quote == "autonomía"
+    assert resolved.concepts[0].evidence[0].start_char == 11

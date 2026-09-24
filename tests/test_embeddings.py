@@ -3,12 +3,14 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 from src.domain.documents import Document
-from src.embeddings.contracts import EmbeddingSpec, EmbeddingVector, SimilarClaim
+from src.embeddings.contracts import EmbeddingSpec, EmbeddingVector, SimilarClaim, SimilarDocument
 from src.extraction.contracts import Claim, ClaimType, Evidence, ExtractionResult
 from src.services.extraction_store import new_extraction_run
 from src.services.openai_embedding_provider import OpenAIEmbeddingProvider
 from src.use_cases.embed_claims import EmbedClaims
+from src.use_cases.embed_documents import EmbedDocument
 from src.use_cases.extract_persist_and_embed_document import ExtractPersistAndEmbedDocument
+from src.use_cases.search_semantically import SearchSemantically
 from src.use_cases.search_similar_claims import SearchSimilarClaims
 
 
@@ -21,6 +23,23 @@ class FakeEmbeddingProvider:
     def embed(self, texts: list[str]) -> list[EmbeddingVector]:
         self.inputs.append(texts)
         return [EmbeddingVector(vector=[0.1, 0.2, 0.3], spec=self.spec) for _ in texts]
+
+
+class FakeDocumentEmbeddingStore:
+    def __init__(self) -> None:
+        self.record = None
+        self.spec = None
+        self.results: list[SimilarDocument] = []
+
+    def persist_document_embedding(self, record, spec) -> None:
+        self.record = record
+        self.spec = spec
+
+    def search_document_embeddings(self, vector, spec, limit):
+        assert vector == [0.1, 0.2, 0.3]
+        assert spec == FakeEmbeddingProvider.spec
+        assert limit == 3
+        return self.results
 
 
 class FakeClaimEmbeddingStore:
@@ -130,11 +149,12 @@ def test_processing_flow_embeds_claims_after_graph_persistence() -> None:
     extraction = completed_extraction(document)
     provider = FakeEmbeddingProvider()
     store = FakeClaimEmbeddingStore()
+    document_store = FakeDocumentEmbeddingStore()
 
     class FakeExtractAndPersist:
-        def execute(self, document_id, profile_name="v3"):
+        def execute(self, document_id, profile_name="v4"):
             assert document_id == document.id
-            assert profile_name == "v3"
+            assert profile_name == "v4"
             return extraction
 
         def get_document(self, document_id):
@@ -144,10 +164,12 @@ def test_processing_flow_embeds_claims_after_graph_persistence() -> None:
     result = ExtractPersistAndEmbedDocument(
         FakeExtractAndPersist(),
         EmbedClaims(provider, store),
+        EmbedDocument(provider, document_store),
     ).execute(document.id)
 
     assert result == extraction
     assert len(store.records) == 1
+    assert document_store.record.document_id == str(document.id)
 
 
 def test_openai_embedding_provider_uses_configured_vector_contract() -> None:
@@ -181,3 +203,60 @@ def test_openai_embedding_provider_uses_configured_vector_contract() -> None:
         "encoding_format": "float",
     }
     assert [item.vector for item in result] == [[0.1, 0.2], [0.3, 0.4]]
+
+
+def test_embed_document_persists_original_content_vector() -> None:
+    document = Document(
+        id=uuid4(),
+        content="Quiero más autonomía.",
+        source="test",
+        metadata={"filename": "note.md"},
+        created_at=datetime.now(UTC),
+    )
+    provider = FakeEmbeddingProvider()
+    store = FakeDocumentEmbeddingStore()
+
+    EmbedDocument(provider, store).execute(document)
+
+    assert provider.inputs == [[document.content]]
+    assert store.record.document_id == str(document.id)
+    assert store.record.content == document.content
+    assert store.record.metadata == {"filename": "note.md"}
+    assert store.spec == provider.spec
+
+
+def test_semantic_search_returns_score_ordered_documents_and_claims() -> None:
+    provider = FakeEmbeddingProvider()
+    claim_store = FakeClaimEmbeddingStore()
+    document_store = FakeDocumentEmbeddingStore()
+    claim_store.results = [
+        SimilarClaim(
+            claim_id="run:claim:claim_autonomy",
+            claim_local_id="claim_autonomy",
+            document_id="document",
+            run_id="run",
+            profile_name="v3",
+            prompt_version="v3",
+            text="Quiero más autonomía.",
+            type="desire",
+            score=0.8,
+            evidence=[],
+        )
+    ]
+    document_store.results = [
+        SimilarDocument(
+            document_id="document",
+            content="Quiero más autonomía.",
+            source="test",
+            metadata={},
+            created_at=datetime.now(UTC),
+            score=0.9,
+        )
+    ]
+
+    result = SearchSemantically(provider, claim_store, document_store).execute(
+        "libertad en el trabajo", limit=3
+    )
+
+    assert [item.target for item in result] == ["document", "claim"]
+    assert provider.inputs == [["libertad en el trabajo"]]

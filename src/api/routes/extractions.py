@@ -11,6 +11,7 @@ from src.extraction.profiles import UnknownExtractionProfileError
 from src.services.document_store import DocumentNotFoundError
 from src.services.extraction_store import ExtractionRun
 from src.use_cases.embed_claims import ClaimEmbeddingFailedError
+from src.use_cases.embed_documents import DocumentEmbeddingFailedError
 from src.use_cases.extract_and_persist_document import (
     GraphPersistenceFailedError,
 )
@@ -56,11 +57,15 @@ async def create_extraction(
                 "run_id": str(error.run_id),
             },
         ) from error
-    except ClaimEmbeddingFailedError as error:
+    except (ClaimEmbeddingFailedError, DocumentEmbeddingFailedError) as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={
-                "message": "Extraction was persisted but claim embeddings failed",
-                "run_id": error.run_id,
+                "message": "Extraction was persisted but embeddings failed",
+                "run_id": (
+                error.run_id
+                if isinstance(error, ClaimEmbeddingFailedError)
+                else error.document_id
+            ),
             },
         ) from error

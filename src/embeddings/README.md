@@ -1,52 +1,45 @@
-# Embeddings de claims
+# Embeddings semánticos
 
-Esta fase hace recuperable semánticamente cada `Claim` extraído y validado. No
-interpreta ni agrupa automáticamente el material: devuelve candidatos para que
-el grafo, las fechas y la evidencia permitan revisar si existe un patrón real.
+Cada carga completa dos representaciones semánticas, conservadas en Neo4j y
+versionadas por proveedor, modelo y dimensiones:
 
-## Decisión actual
-
-La unidad embebida es `Claim.text`, no el documento completo ni los conceptos.
-Una búsqueda semántica debería encontrar afirmaciones cercanas de distintas
-notas; desde cada claim se llega al documento y a su evidencia original.
+- El documento original completo, para encontrar una nota aunque la extracción
+  no haya producido el claim exacto.
+- Cada `Claim.text` extraído, para recuperar evidencia puntual y alimentar las
+  reflexiones sin perder su vínculo con el documento y sus líneas de soporte.
 
 ```text
+(:Document)-[:HAS_EMBEDDING]->(:DocumentEmbedding)
 (:Claim)-[:HAS_EMBEDDING]->(:ClaimEmbedding)
 (:Claim)-[:SUPPORTED_BY]->(:Evidence)-[:FROM_DOCUMENT]->(:Document)
 ```
 
-`ClaimEmbedding` conserva `run_id`, `profile_name`, `prompt_version`, proveedor,
-modelo, dimensiones y el hash del texto. Por eso una variante futura del
-extractor no se mezcla silenciosamente con claims producidos por otro perfil.
+Los dos índices se mantienen separados por tipo y por especificación del
+modelo. Esto impide comparar vectores incompatibles y conserva los vectores
+anteriores de forma auditable cuando se cambia de modelo.
 
-## Conceptos: decisión pendiente
-
-Los conceptos no reciben embeddings en esta fase. Sus nombres suelen ser cortos y todavía no existe una estrategia validada para determinar cuándo conceptos de dos corridas representan la misma idea. Relacionarlos y canonicalizarlos es una decisión central pendiente; debe evaluarse explícitamente antes de crear nodos globales o fusionar `Concept` entre documentos.
-
-## Índices separados por modelo
-
-Neo4j crea una etiqueta e índice vectorial específicos para cada combinación de
-proveedor, modelo y dimensiones. Así, cambiar de modelo no compara vectores
-incompatibles. Los vectores anteriores permanecen auditables con sus metadatos.
-
-## Uso
-
-Al completar una carga, el flujo es:
+## Flujo
 
 ```text
-ingesta → extracción → persistencia de grafo → embeddings de claims
+ingesta → extracción → persistencia de grafo → embeddings de claims y documento
 ```
 
-Para buscar, enviá una consulta semántica sin LLM generativo:
+Si fallan los embeddings, el documento y su extracción siguen preservados, pero
+la API informa que todavía no son recuperables semánticamente.
+
+## Búsqueda
+
+`POST /search` devuelve hasta `limit` resultados de ambos tipos, ordenados por
+`score`. Cada elemento se identifica mediante `target: "document"` o
+`target: "claim"`. Los resultados de documento contienen el texto original,
+metadatos y fecha; los de claim conservan el run de extracción y las evidencias.
 
 ```bash
-curl -X POST http://localhost:8000/search/claims \
+curl -X POST http://localhost:8000/search \
   -H 'content-type: application/json' \
-  -d '{"query":"preocupación por perder libertad", "limit": 10}'
+  -d '{"query":"preocupación por perder libertad", "limit":10}'
 ```
 
-La respuesta contiene `score`, claim, versión de extracción y evidencias. Un
-score no prueba un patrón: solo ordena material potencialmente relacionado.
-
-La implementación OpenAI usa el endpoint de embeddings y `text-embedding-3-small`
-con 1536 dimensiones por defecto. Consultá la [guía de embeddings de OpenAI](https://developers.openai.com/api/docs/guides/embeddings).
+`POST /search/claims` sigue disponible exclusivamente para las reflexiones, que
+requieren candidatos con evidencia explícita. Un `score` sólo ordena material
+potencialmente relacionado: no demuestra por sí solo un patrón.

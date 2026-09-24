@@ -10,26 +10,34 @@ from src.api.schemas.documents import (
     DocumentResponse,
     ProcessedDocumentResponse,
 )
-from src.dependencies import get_ingest_and_extract_document, get_ingest_document_file, get_delete_document, get_list_documents
+from src.dependencies import (
+    get_delete_document,
+    get_ingest_and_extract_document,
+    get_ingest_document_file,
+    get_list_documents,
+)
 from src.domain.documents import NewDocument
-from src.services.document_store import DocumentAlreadyExistsError
+from src.services.document_store import DocumentAlreadyExistsError, DocumentNotFoundError
+from src.use_cases.delete_document import DeleteDocument
 from src.use_cases.embed_claims import ClaimEmbeddingFailedError
+from src.use_cases.embed_documents import DocumentEmbeddingFailedError
 from src.use_cases.extract_and_persist_document import GraphPersistenceFailedError
 from src.use_cases.extract_document import ExtractionRunFailedError
 from src.use_cases.ingest_and_extract_document import IngestAndExtractDocument
-from src.use_cases.delete_document import DeleteDocument
-from src.use_cases.list_documents import ListDocuments
 from src.use_cases.ingest_document_file import (
     IngestDocumentFile,
     InvalidDocumentEncodingError,
     UnsupportedDocumentFileError,
 )
+from src.use_cases.list_documents import ListDocuments
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
 @router.get("", response_model=list[DocumentResponse])
-async def list_documents(use_case: Annotated[ListDocuments, Depends(get_list_documents)]) -> list[DocumentResponse]:
+async def list_documents(
+    use_case: Annotated[ListDocuments, Depends(get_list_documents)],
+) -> list[DocumentResponse]:
     return [DocumentResponse(**document.model_dump()) for document in use_case.execute()]
 
 
@@ -47,8 +55,8 @@ async def create_document(
         raise _extraction_failed_response(error) from error
     except GraphPersistenceFailedError as error:
         raise _graph_persistence_failed_response(error) from error
-    except ClaimEmbeddingFailedError as error:
-        raise _claim_embedding_failed_response(error) from error
+    except (ClaimEmbeddingFailedError, DocumentEmbeddingFailedError) as error:
+        raise _embedding_failed_response(error) from error
 
     return ProcessedDocumentResponse(
         document=DocumentResponse(**processed.document.model_dump()),
@@ -69,7 +77,9 @@ async def create_document_from_file(
 ) -> ProcessedDocumentResponse:
     """Store and immediately extract from an uploaded `.md` or `.txt` note."""
     try:
-        new_document = file_use_case.build_new_document(file.filename, await file.read(), document_id)
+        new_document = file_use_case.build_new_document(
+            file.filename, await file.read(), document_id
+        )
     except UnsupportedDocumentFileError as error:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -89,8 +99,8 @@ async def create_document_from_file(
         raise _extraction_failed_response(error) from error
     except GraphPersistenceFailedError as error:
         raise _graph_persistence_failed_response(error) from error
-    except ClaimEmbeddingFailedError as error:
-        raise _claim_embedding_failed_response(error) from error
+    except (ClaimEmbeddingFailedError, DocumentEmbeddingFailedError) as error:
+        raise _embedding_failed_response(error) from error
 
     return ProcessedDocumentResponse(
         document=DocumentResponse(**processed.document.model_dump()),
@@ -99,7 +109,10 @@ async def create_document_from_file(
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(document_id: UUID, use_case: Annotated[DeleteDocument, Depends(get_delete_document)]) -> None:
+async def delete_document(
+    document_id: UUID,
+    use_case: Annotated[DeleteDocument, Depends(get_delete_document)],
+) -> None:
     try:
         use_case.execute(document_id)
     except DocumentNotFoundError as error:
@@ -110,10 +123,7 @@ def _extraction_failed_response(error: ExtractionRunFailedError) -> HTTPExceptio
     """Tell callers the document was stored but did not finish processing."""
     return HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
-        detail={
-            "message": "Document was stored but extraction failed",
-            "run_id": str(error.run_id),
-        },
+        detail={"message": "Extraction failed", "run_id": str(error.run_id)},
     )
 
 
@@ -128,12 +138,18 @@ def _graph_persistence_failed_response(error: GraphPersistenceFailedError) -> HT
     )
 
 
-def _claim_embedding_failed_response(error: ClaimEmbeddingFailedError) -> HTTPException:
-    """Tell callers that a completed extraction is not yet semantically searchable."""
+def _embedding_failed_response(
+    error: ClaimEmbeddingFailedError | DocumentEmbeddingFailedError,
+) -> HTTPException:
+    """Tell callers the persisted material is not yet semantically searchable."""
     return HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail={
-            "message": "Document was extracted but claim embeddings failed",
-            "run_id": error.run_id,
+            "message": "Document was extracted but embeddings failed",
+            "run_id": (
+                error.run_id
+                if isinstance(error, ClaimEmbeddingFailedError)
+                else error.document_id
+            ),
         },
     )

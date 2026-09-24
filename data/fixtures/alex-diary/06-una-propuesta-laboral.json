@@ -1,0 +1,7 @@
+{
+  "id": "0c2bad88-4e5b-5b64-a4dd-a88921e05e52",
+  "content": "Hoy me ofrecieron un puesto en otra empresa.\n\nEl salario es aproximadamente un 25 % superior al actual y tendría la posibilidad de trabajar con tecnologías que me interesan.\n\nSin embargo, el puesto requiere asistir a la oficina cuatro días por semana.\n\nActualmente trabajo desde casa y tengo bastante flexibilidad para organizar mis horarios.\n\nLa propuesta me entusiasma profesionalmente, pero no estoy seguro de querer sacrificar esa flexibilidad.",
+  "source": "synthetic_fixture",
+  "metadata": {"dataset": "alex-diary", "dataset_version": "1", "note_number": "06", "phase": "baseline", "title": "Una propuesta laboral", "language": "es-AR", "author": "Alex (synthetic)"},
+  "created_at": "2026-03-03T12:00:00-03:00"
+}
