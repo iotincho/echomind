@@ -1,0 +1,7 @@
+{
+  "id": "e4155924-85dc-5ff2-a970-5e2520a38a7c",
+  "content": "Finalmente decidí empezar a desarrollar mi aplicación.\n\nEn lugar de seguir investigando tecnologías, elegí las herramientas que ya conocía y construí una primera versión muy sencilla.\n\nTodavía tiene muchísimas limitaciones, pero funciona.\n\nMe sorprendió descubrir que algunas decisiones que parecían importantísimas cuando estaba planificando resultaron irrelevantes cuando empecé a programar.\n\nQuizás debería experimentar más y planificar menos.",
+  "source": "synthetic_fixture",
+  "metadata": {"dataset": "alex-diary", "dataset_version": "1", "note_number": "08", "phase": "baseline", "title": "Empecé el proyecto", "language": "es-AR", "author": "Alex (synthetic)"},
+  "authored_at": "2026-04-02T12:00:00-03:00"
+}

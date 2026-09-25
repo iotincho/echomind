@@ -149,8 +149,16 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
+
+# Personal source material is local and must never be committed.
+data/documents/
+!data/documents/.gitkeep
+data/extractions/
+!data/extractions/.gitkeep
 .envrc
-.venv
+.venv/
 env/
 venv/
 ENV/
@@ -216,3 +224,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Others
+_app_data/
+.bevel/
+.vscode/
+

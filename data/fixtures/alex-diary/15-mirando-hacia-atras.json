@@ -1,0 +1,7 @@
+{
+  "id": "038f0d7c-33e6-59a5-8de3-6ff87312fed9",
+  "content": "Estuve leyendo algunas notas que escribí a principios de año.\n\nEn enero estaba bastante preocupado por mi estabilidad económica y sentía que necesitaba ganar más dinero antes de intentar cualquier proyecto propio.\n\nAhora sigo valorando la estabilidad, pero estoy empezando a entender que también necesito autonomía y tiempo para las cosas que disfruto.\n\nTambién me llamó la atención que durante meses estuve pensando en empezar un proyecto y, una vez que finalmente lo hice, descubrí que muchas de mis preocupaciones eran exageradas.\n\nTodavía no decidí si voy a mudarme a las sierras, pero ya no pienso que tenga que elegir entre vivir completamente aislado o quedarme en la ciudad.\n\nQuizás el cambio más importante de estos meses fue empezar a probar alternativas en lugar de esperar a tener todas las respuestas.",
+  "source": "synthetic_fixture",
+  "metadata": {"dataset": "alex-diary", "dataset_version": "1", "note_number": "15", "phase": "baseline", "title": "Mirando hacia atrás", "language": "es-AR", "author": "Alex (synthetic)"},
+  "authored_at": "2026-07-22T12:00:00-03:00"
+}
