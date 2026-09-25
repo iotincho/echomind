@@ -159,6 +159,7 @@ class Neo4jGraphStore(
                            document.source AS document_source,
                            document.metadata_json AS document_metadata_json,
                            document.created_at AS document_created_at,
+                           document.authored_at AS document_authored_at,
                            score,
                            [item IN evidence_nodes | {
                                quote: item.quote,
@@ -239,6 +240,7 @@ class Neo4jGraphStore(
                            node.source AS source,
                            node.metadata_json AS metadata_json,
                            node.created_at AS created_at,
+                           node.authored_at AS authored_at,
                            score
                     ORDER BY score DESC
                     """,
@@ -384,7 +386,8 @@ class Neo4jGraphStore(
             MERGE (document:Document {id: $id})
             SET document.source = $source,
                 document.metadata_json = $metadata_json,
-                document.created_at = $created_at
+                document.created_at = $created_at,
+                document.authored_at = $authored_at
             MERGE (run:ExtractionRun {id: $run_id})
             SET run.document_id = $document_id,
                 run.profile_name = $profile_name,
@@ -399,6 +402,7 @@ class Neo4jGraphStore(
             source=document.source,
             metadata_json=json.dumps(document.metadata, ensure_ascii=False, sort_keys=True),
             created_at=document.created_at.isoformat(),
+            authored_at=document.authored_at.isoformat() if document.authored_at else None,
             run_id=run_id,
             document_id=document_id,
             profile_name=extraction.profile_name,
@@ -666,6 +670,7 @@ class Neo4jGraphStore(
                 embedding.source = $source,
                 embedding.metadata_json = $metadata_json,
                 embedding.created_at = $created_at,
+                embedding.authored_at = $authored_at,
                 embedding.vector = $vector,
                 embedding.provider = $provider,
                 embedding.model = $model,
@@ -681,6 +686,7 @@ class Neo4jGraphStore(
             source=record.source,
             metadata_json=json.dumps(record.metadata, ensure_ascii=False, sort_keys=True),
             created_at=record.created_at.isoformat(),
+            authored_at=record.authored_at.isoformat() if record.authored_at else None,
             vector=record.vector,
             provider=record.spec.provider,
             model=record.spec.model,
@@ -695,6 +701,7 @@ class Neo4jGraphStore(
             source=record["source"],
             metadata=json.loads(record["metadata_json"]),
             created_at=record["created_at"],
+            authored_at=record.get("authored_at"),
             score=record["score"],
         )
 
@@ -714,6 +721,7 @@ class Neo4jGraphStore(
             document_source=record.get("document_source"),
             document_metadata=json.loads(record.get("document_metadata_json") or "{}"),
             document_created_at=record.get("document_created_at"),
+            document_authored_at=record.get("document_authored_at"),
         )
 
     def delete_document(self, document_id: str) -> None:

@@ -3,5 +3,5 @@
   "content": "Después de varias semanas trabajando en la aplicación, descubrí que casi nadie la utiliza regularmente.\n\nMe decepcionó bastante.\n\nDurante unos días pensé en abandonar el proyecto y empezar con otra idea.\n\nSin embargo, recordé que uno de mis objetivos era aprender a construir productos y no solamente imaginar cómo serían.\n\nDecidí hablar con las personas que probaron la aplicación para entender qué necesitaban realmente.",
   "source": "synthetic_fixture",
   "metadata": {"dataset": "alex-diary", "dataset_version": "1", "note_number": "13", "phase": "baseline", "title": "Un pequeño fracaso", "language": "es-AR", "author": "Alex (synthetic)"},
-  "created_at": "2026-06-19T12:00:00-03:00"
+  "authored_at": "2026-06-19T12:00:00-03:00"
 }

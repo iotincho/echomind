@@ -20,7 +20,7 @@ def test_load_fixtures_selects_the_baseline_in_note_order() -> None:
     assert [payload["metadata"]["note_number"] for _, payload in fixtures] == [
         f"{number:02}" for number in range(1, 16)
     ]
-    assert all(payload["created_at"].endswith("-03:00") for _, payload in fixtures)
+    assert all(payload["authored_at"].endswith("-03:00") for _, payload in fixtures)
 
 
 def test_load_fixtures_selects_only_the_incremental_notes() -> None:

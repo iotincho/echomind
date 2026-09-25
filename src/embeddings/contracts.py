@@ -64,6 +64,7 @@ class SimilarClaim(EmbeddingModel):
     document_source: str | None = None
     document_metadata: dict[str, str] = Field(default_factory=dict)
     document_created_at: datetime | None = None
+    document_authored_at: datetime | None = None
     target: Literal["claim"] = "claim"
 
 
@@ -77,6 +78,7 @@ class DocumentEmbeddingRecord(EmbeddingModel):
     source: str = Field(min_length=1)
     metadata: dict[str, str]
     created_at: datetime
+    authored_at: datetime | None = None
     vector: list[float] = Field(min_length=1)
     spec: EmbeddingSpec
 
@@ -87,6 +89,7 @@ class SimilarDocument(EmbeddingModel):
     source: str
     metadata: dict[str, str]
     created_at: datetime
+    authored_at: datetime | None = None
     score: float
     target: Literal["document"] = "document"
 

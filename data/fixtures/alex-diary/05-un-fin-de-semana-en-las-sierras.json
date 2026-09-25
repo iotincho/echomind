@@ -3,5 +3,5 @@
   "content": "Pasé el fin de semana en una cabaña en las sierras.\n\nMe sorprendió lo bien que me hizo estar lejos del ruido de la ciudad.\n\nCaminé bastante, leí un libro y cociné sin mirar el reloj.\n\nHace tiempo que pienso en mudarme a un lugar más tranquilo, pero siempre encuentro alguna razón para postergarlo.\n\nQuizás debería empezar a considerar seriamente la posibilidad de vivir fuera de la ciudad.",
   "source": "synthetic_fixture",
   "metadata": {"dataset": "alex-diary", "dataset_version": "1", "note_number": "05", "phase": "baseline", "title": "Un fin de semana en las sierras", "language": "es-AR", "author": "Alex (synthetic)"},
-  "created_at": "2026-02-20T12:00:00-03:00"
+  "authored_at": "2026-02-20T12:00:00-03:00"
 }

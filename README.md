@@ -99,7 +99,8 @@ Material original, que siempre debe preservarse.
 Document
 - id
 - content
-- created_at
+- created_at (fecha de inserción en El Espejo)
+- authored_at (fecha en que el usuario redactó la nota, si se conoce)
 - source
 ```
 

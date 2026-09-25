@@ -3,5 +3,5 @@
   "content": "Hoy le mostré mi aplicación a tres amigos.\n\nDos me dijeron que les resultaba útil y uno encontró varios problemas que no había considerado.\n\nAl principio me molestaron un poco sus críticas, pero después me di cuenta de que me estaban ayudando a mejorar el producto.\n\nCreo que trabajar en proyectos propios también significa aprender a mostrar cosas incompletas y aceptar que otros pueden encontrar errores.\n\nTodavía me cuesta, pero quiero seguir trabajando en eso.",
   "source": "synthetic_fixture",
   "metadata": {"dataset": "alex-diary", "dataset_version": "1", "note_number": "10", "phase": "baseline", "title": "El proyecto empieza a tomar forma", "language": "es-AR", "author": "Alex (synthetic)"},
-  "created_at": "2026-05-05T12:00:00-03:00"
+  "authored_at": "2026-05-05T12:00:00-03:00"
 }

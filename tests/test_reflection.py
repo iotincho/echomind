@@ -141,7 +141,8 @@ def test_document_context_exposes_all_metadata_with_known_definitions() -> None:
     candidate_with_metadata = candidate().model_copy(
         update={
             "document_source": "alex-diary",
-            "document_created_at": "2026-09-01T09:00:00-03:00",
+            "document_created_at": "2026-09-25T09:00:00-03:00",
+            "document_authored_at": "2026-09-01T09:00:00-03:00",
             "document_metadata": {
                 "note_number": "18",
                 "phase": "incremental",
@@ -154,5 +155,7 @@ def test_document_context_exposes_all_metadata_with_known_definitions() -> None:
 
     assert documents[0].metadata == candidate_with_metadata.document_metadata
     assert documents[0].created_at is not None
+    assert documents[0].authored_at is not None
+    assert definitions["authored_at"].description.startswith("When the user wrote")
     assert definitions["note_number"].description.startswith("Stable human reference")
     assert definitions["custom_field"].value_type == "string"

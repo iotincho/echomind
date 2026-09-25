@@ -1,5 +1,6 @@
 """Turn an uploaded UTF-8 text file into an original Document."""
 
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -25,7 +26,11 @@ class IngestDocumentFile:
         self._ingest_document = IngestDocument(document_store)
 
     def build_new_document(
-        self, filename: str | None, content: bytes, document_id: UUID | None = None
+        self,
+        filename: str | None,
+        content: bytes,
+        document_id: UUID | None = None,
+        authored_at: datetime | None = None,
     ) -> NewDocument:
         """Validate an upload and translate it into the provider-neutral input model."""
         if not filename:
@@ -49,6 +54,7 @@ class IngestDocumentFile:
             source="file_upload",
             metadata={"filename": safe_filename, "format": extension.removeprefix(".")},
             id=document_id,
+            authored_at=authored_at,
         )
 
     def execute(self, filename: str | None, content: bytes) -> Document:

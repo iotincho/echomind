@@ -32,6 +32,7 @@ class ReflectionDocument(ReflectionModel):
     id: str
     source: str | None = None
     created_at: datetime | None = None
+    authored_at: datetime | None = None
     metadata: dict[str, str] = Field(default_factory=dict)
 
 

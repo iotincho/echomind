@@ -9,12 +9,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class NewDocument(BaseModel):
     """Information required to register original user material."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     content: str
     source: str = Field(default="api", min_length=1, max_length=100)
     metadata: dict[str, str] = Field(default_factory=dict)
-    created_at: datetime | None = None
+    authored_at: datetime | None = None
     id: UUID | None = None
 
     @field_validator("content")
@@ -24,11 +24,11 @@ class NewDocument(BaseModel):
             raise ValueError("content must not be blank")
         return value
 
-    @field_validator("created_at")
+    @field_validator("authored_at")
     @classmethod
-    def created_at_must_include_timezone(cls, value: datetime | None) -> datetime | None:
+    def authored_at_must_include_timezone(cls, value: datetime | None) -> datetime | None:
         if value is not None and value.tzinfo is None:
-            raise ValueError("created_at must include a timezone")
+            raise ValueError("authored_at must include a timezone")
         return value
 
 
@@ -42,6 +42,7 @@ class Document(BaseModel):
     source: str
     metadata: dict[str, str]
     created_at: datetime
+    authored_at: datetime | None = None
 
 
 def build_document(new_document: NewDocument) -> Document:
@@ -51,5 +52,6 @@ def build_document(new_document: NewDocument) -> Document:
         content=new_document.content,
         source=new_document.source,
         metadata=new_document.metadata,
-        created_at=new_document.created_at or datetime.now(UTC),
+        created_at=datetime.now(UTC),
+        authored_at=new_document.authored_at,
     )

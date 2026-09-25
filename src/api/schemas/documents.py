@@ -19,6 +19,7 @@ class DocumentResponse(BaseModel):
     source: str
     metadata: dict[str, str]
     created_at: datetime
+    authored_at: datetime | None = None
 
 
 class ProcessedDocumentResponse(BaseModel):

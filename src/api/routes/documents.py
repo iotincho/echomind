@@ -1,9 +1,11 @@
 """Document-ingestion HTTP endpoints."""
 
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from pydantic import ValidationError
 
 from src.api.schemas.documents import (
     CreateDocumentRequest,
@@ -74,11 +76,12 @@ async def create_document_from_file(
     file_use_case: Annotated[IngestDocumentFile, Depends(get_ingest_document_file)],
     use_case: Annotated[IngestAndExtractDocument, Depends(get_ingest_and_extract_document)],
     document_id: Annotated[UUID | None, Form()] = None,
+    authored_at: Annotated[datetime | None, Form()] = None,
 ) -> ProcessedDocumentResponse:
     """Store and immediately extract from an uploaded `.md` or `.txt` note."""
     try:
         new_document = file_use_case.build_new_document(
-            file.filename, await file.read(), document_id
+            file.filename, await file.read(), document_id, authored_at
         )
     except UnsupportedDocumentFileError as error:
         raise HTTPException(
@@ -89,6 +92,11 @@ async def create_document_from_file(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(error),
+        ) from error
+    except ValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=error.errors(),
         ) from error
 
     try:

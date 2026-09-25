@@ -25,12 +25,14 @@ def test_alex_diary_fixtures_are_valid_new_documents_in_temporal_order() -> None
         "incremental"
     ] * 3
     assert all(document.source == "synthetic_fixture" for document in documents)
-    assert all(document.created_at is not None for document in documents)
+    assert all(document.authored_at is not None for document in documents)
     assert all(
-        document.created_at.utcoffset() is not None for document in documents if document.created_at
+        document.authored_at.utcoffset() is not None
+        for document in documents
+        if document.authored_at
     )
     assert [
-        document.created_at.astimezone(UTC) for document in documents if document.created_at
+        document.authored_at.astimezone(UTC) for document in documents if document.authored_at
     ] == sorted(
-        document.created_at.astimezone(UTC) for document in documents if document.created_at
+        document.authored_at.astimezone(UTC) for document in documents if document.authored_at
     )

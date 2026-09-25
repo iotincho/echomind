@@ -8,7 +8,11 @@ CORE_FIELD_DEFINITIONS = {
     "id": MetadataFieldDefinition(description="Stable El Espejo document identifier.", value_type="string"),
     "source": MetadataFieldDefinition(description="Ingestion provenance supplied with the document.", value_type="string"),
     "created_at": MetadataFieldDefinition(
-        description="When the note was expressed, preserving its timezone offset. Use it to order events and identify the latest known state; it is not the extraction or upload time.",
+        description="When El Espejo inserted the document. It is not the date the note was written, uploaded to another system, or extracted.",
+        value_type="ISO-8601 datetime with timezone",
+    ),
+    "authored_at": MetadataFieldDefinition(
+        description="When the user wrote the note, preserving its timezone offset. Use it to order events and identify the latest known state; it may differ from created_at after an import.",
         value_type="ISO-8601 datetime with timezone",
     ),
 }
@@ -40,6 +44,7 @@ def build_document_context(
                 id=claim.document_id,
                 source=claim.document_source,
                 created_at=claim.document_created_at,
+                authored_at=claim.document_authored_at,
                 metadata=claim.document_metadata,
             ),
         )

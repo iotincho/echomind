@@ -44,6 +44,7 @@ class EmbedDocument:
                     source=document.source,
                     metadata=document.metadata,
                     created_at=document.created_at,
+                    authored_at=document.authored_at,
                     vector=vector.vector,
                     spec=vector.spec,
                 ),

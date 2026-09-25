@@ -1,6 +1,6 @@
 # Carga del diario sintético de Alex
 
-El script [`scripts/ingest_alex_diary.py`](../scripts/ingest_alex_diary.py) envía cada fixture JSON a `POST /documents`, preservando su `created_at`, UUID y metadatos. Las solicitudes son secuenciales y una falla detiene la corrida.
+El script [`scripts/ingest_alex_diary.py`](../scripts/ingest_alex_diary.py) envía cada fixture JSON a `POST /documents`, preservando su `authored_at`, UUID y metadatos. Las solicitudes son secuenciales y una falla detiene la corrida.
 
 Primero verificar la selección sin tocar la API:
 

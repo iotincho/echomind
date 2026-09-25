@@ -4,11 +4,12 @@ Este dataset permite evaluar la POC con evidencia conocida, sin incorporar pensa
 
 ## Contrato de las notas
 
-Cada fixture contiene `id`, `content`, `source`, `metadata` y `created_at`. `created_at` es la fecha del texto expresada con zona horaria (`-03:00`); no es la hora en que se realizó la carga. La API `POST /documents` ya acepta ese campo y lo conserva. Los metadatos son deliberadamente simples y todos sus valores son texto, tal como exige el contrato actual.
+Cada fixture contiene `id`, `content`, `source`, `metadata` y `authored_at`. `authored_at` es la fecha del texto expresada con zona horaria (`-03:00`). `created_at` lo asigna El Espejo al insertar el documento, por lo que ambos valores pueden diferir en una importación. La API `POST /documents` acepta `authored_at` y conserva ambas fechas. Los metadatos son deliberadamente simples y todos sus valores son texto, tal como exige el contrato actual.
 
 | Campo | Uso |
 | --- | --- |
-| `created_at` | Orden temporal de lo expresado en la nota. |
+| `authored_at` | Orden temporal de lo expresado en la nota. |
+| `created_at` | Momento de inserción del documento en El Espejo. |
 | `metadata.title` | Título visible y referencia humana. |
 | `metadata.note_number` | Identificador estable para la evidencia esperada. |
 | `metadata.phase` | `baseline` (01–15) o `incremental` (16–18). |

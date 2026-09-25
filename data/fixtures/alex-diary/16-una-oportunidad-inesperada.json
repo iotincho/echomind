@@ -3,5 +3,5 @@
   "content": "Hoy recibí otra propuesta laboral. Esta vez se trata de una empresa que permite trabajar completamente de forma remota y ofrece un salario bastante superior al actual.\n\nMe entusiasma la posibilidad de aprender nuevas tecnologías sin perder la flexibilidad que tanto valoro.\n\nEstoy considerando seriamente aceptar.",
   "source": "synthetic_fixture",
   "metadata": {"dataset": "alex-diary", "dataset_version": "1", "note_number": "16", "phase": "incremental", "title": "Una oportunidad inesperada", "language": "es-AR", "author": "Alex (synthetic)"},
-  "created_at": "2026-08-10T12:00:00-03:00"
+  "authored_at": "2026-08-10T12:00:00-03:00"
 }

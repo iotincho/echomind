@@ -3,5 +3,5 @@
   "content": "Rechacé la propuesta de trabajo que había recibido en marzo.\n\nEl aumento salarial era interesante, pero no quería perder la posibilidad de trabajar desde cualquier lugar.\n\nAdemás, si realmente quiero mudarme a las sierras, necesito conservar esa flexibilidad.\n\nDurante mucho tiempo pensé que ganar más dinero era una prioridad, pero últimamente estoy empezando a valorar otras cosas.\n\nNo significa que el dinero haya dejado de importarme, sino que quizás no estoy dispuesto a sacrificar cualquier cosa para conseguirlo.",
   "source": "synthetic_fixture",
   "metadata": {"dataset": "alex-diary", "dataset_version": "1", "note_number": "09", "phase": "baseline", "title": "Una decisión laboral", "language": "es-AR", "author": "Alex (synthetic)"},
-  "created_at": "2026-04-18T12:00:00-03:00"
+  "authored_at": "2026-04-18T12:00:00-03:00"
 }

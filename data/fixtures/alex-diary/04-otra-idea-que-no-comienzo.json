@@ -3,5 +3,5 @@
   "content": "Hoy estuve investigando cómo desarrollar una aplicación para organizar proyectos personales.\n\nMe entusiasmé mucho con la idea y pasé varias horas leyendo documentación, comparando frameworks y pensando en posibles funcionalidades.\n\nSin embargo, cuando llegó el momento de empezar a programar, decidí seguir investigando.\n\nMe preocupa elegir una tecnología equivocada y tener que rehacer todo después.\n\nEs curioso: disfruto muchísimo diseñar proyectos, pero me cuesta empezar a construirlos.",
   "source": "synthetic_fixture",
   "metadata": {"dataset": "alex-diary", "dataset_version": "1", "note_number": "04", "phase": "baseline", "title": "Otra idea que no comienzo", "language": "es-AR", "author": "Alex (synthetic)"},
-  "created_at": "2026-02-08T12:00:00-03:00"
+  "authored_at": "2026-02-08T12:00:00-03:00"
 }

@@ -1,6 +1,7 @@
 import httpx
 import pytest
 
+from src.auth.session import require_authenticated
 from src.dependencies import get_ingest_and_extract_document, get_ingest_document_file
 from src.domain.documents import Document
 from src.extraction.contracts import Concept, Evidence, ExtractionResult
@@ -60,21 +61,28 @@ async def test_create_document_delegates_to_use_case_and_returns_created_documen
         return processing_use_case(tmp_path)
 
     app.dependency_overrides[get_ingest_and_extract_document] = override_process_document
+    app.dependency_overrides[require_authenticated] = lambda: "test-user"
 
     try:
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/documents",
-                json={"content": "Estoy evaluando un cambio.", "source": "manual"},
+                json={
+                    "content": "Estoy evaluando un cambio.",
+                    "source": "manual",
+                    "authored_at": "2024-01-10T09:30:00-03:00",
+                },
             )
     finally:
         app.dependency_overrides.clear()
 
-    assert response.status_code == 201
+    assert response.status_code == 201, response.text
     body = response.json()
     assert body["document"]["content"] == "Estoy evaluando un cambio."
     assert body["document"]["source"] == "manual"
+    assert body["document"]["authored_at"] == "2024-01-10T09:30:00-03:00"
+    assert body["document"]["created_at"] != body["document"]["authored_at"]
     assert body["extraction"]["status"] == "completed"
     assert (tmp_path / "documents" / f"{body['document']['id']}.json").is_file()
 
@@ -89,12 +97,14 @@ async def test_create_document_from_markdown_file(tmp_path) -> None:
 
     app.dependency_overrides[get_ingest_document_file] = override_ingest_document_file
     app.dependency_overrides[get_ingest_and_extract_document] = override_process_document
+    app.dependency_overrides[require_authenticated] = lambda: "test-user"
 
     try:
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/documents/files",
+                data={"authored_at": "2024-01-10T09:30:00-03:00"},
                 files={
                     "file": (
                         "reflexion.md",
@@ -106,8 +116,9 @@ async def test_create_document_from_markdown_file(tmp_path) -> None:
     finally:
         app.dependency_overrides.clear()
 
-    assert response.status_code == 201
+    assert response.status_code == 201, response.text
     assert response.json()["document"]["metadata"] == {"filename": "reflexion.md", "format": "md"}
+    assert response.json()["document"]["authored_at"] == "2024-01-10T09:30:00-03:00"
     assert response.json()["extraction"]["status"] == "completed"
     assert (tmp_path / "documents" / f"{response.json()['document']['id']}.json").is_file()
 

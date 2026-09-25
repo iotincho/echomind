@@ -157,7 +157,8 @@ def test_neo4j_graph_store_search_keeps_run_in_cypher_scope() -> None:
                             "type": "desire",
                             "document_source": "test",
                             "document_metadata_json": '{"filename": "note.md"}',
-                            "document_created_at": "2026-01-01T00:00:00+00:00",
+                            "document_created_at": "2026-09-25T00:00:00+00:00",
+                            "document_authored_at": "2026-01-01T00:00:00+00:00",
                             "score": 0.9,
                             "evidence": [],
                         }
@@ -177,7 +178,8 @@ def test_neo4j_graph_store_search_keeps_run_in_cypher_scope() -> None:
 
     assert results[0].profile_name == "v3"
     assert results[0].document_metadata == {"filename": "note.md"}
-    assert results[0].document_created_at == datetime(2026, 1, 1, tzinfo=UTC)
+    assert results[0].document_created_at == datetime(2026, 9, 25, tzinfo=UTC)
+    assert results[0].document_authored_at == datetime(2026, 1, 1, tzinfo=UTC)
     query = driver.session_instance.schema_queries[-1]
     assert "document.metadata_json AS document_metadata_json" in query
 
@@ -199,7 +201,8 @@ def test_neo4j_graph_store_persists_and_searches_document_embeddings() -> None:
                             "content": "Quiero más autonomía.",
                             "source": "test",
                             "metadata_json": '{"filename": "note.md"}',
-                            "created_at": "2026-01-01T00:00:00+00:00",
+                            "created_at": "2026-09-25T00:00:00+00:00",
+                            "authored_at": "2026-01-01T00:00:00+00:00",
                             "score": 0.9,
                         }
                     )
@@ -221,6 +224,7 @@ def test_neo4j_graph_store_persists_and_searches_document_embeddings() -> None:
         source="test",
         metadata={"filename": "note.md"},
         created_at=datetime.now(UTC),
+        authored_at=datetime(2026, 1, 1, tzinfo=UTC),
         vector=[0.0] * 1536,
         spec=spec,
     )
@@ -233,6 +237,8 @@ def test_neo4j_graph_store_persists_and_searches_document_embeddings() -> None:
     assert "MATCH (document:Document" in writes
     assert results[0].target == "document"
     assert results[0].metadata == {"filename": "note.md"}
+    assert results[0].authored_at == datetime(2026, 1, 1, tzinfo=UTC)
+    assert "embedding.authored_at = $authored_at" in writes
 
 
 def test_neo4j_graph_store_persists_claim_embeddings_without_binding_self() -> None:
