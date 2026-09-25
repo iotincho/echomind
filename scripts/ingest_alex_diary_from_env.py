@@ -11,14 +11,14 @@ from urllib.error import HTTPError
 from ingest_alex_diary import format_http_error, load_fixtures, login, request_json
 
 
-API_URL = os.environ.get("ECHOMIND_API_URL", "http://localhost:8080/api").rstrip("/")
+API_URL = os.environ.get("API_URL", "http://localhost:8080/api").rstrip("/")
 
 
 def main() -> int:
-    username = os.environ.get("ECHOMIND_AUTH_USERNAME")
-    password = os.environ.get("ECHOMIND_AUTH_PASSWORD")
+    username = os.environ.get("AUTH_USERNAME")
+    password = os.environ.get("AUTH_PASSWORD")
     if not username or not password:
-        print("ECHOMIND_AUTH_USERNAME and ECHOMIND_AUTH_PASSWORD are required", file=sys.stderr)
+        print("AUTH_USERNAME and AUTH_PASSWORD are required", file=sys.stderr)
         return 2
 
     try:

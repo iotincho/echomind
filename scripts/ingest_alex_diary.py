@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load the synthetic Alex diary fixtures through EchoMind's HTTP API.
+"""Load the synthetic Alex diary fixtures through El Espejo's HTTP API.
 
 The script is intentionally sequential: a failure stops the run so a partial
 corpus cannot go unnoticed. Fixture UUIDs are stable, so API 409 responses can
@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Load Alex diary fixtures through POST /documents."
     )
-    parser.add_argument("--api-url", default="http://localhost:8000", help="EchoMind API base URL")
+    parser.add_argument("--api-url", default="http://localhost:8000", help="El Espejo API base URL")
     parser.add_argument(
         "--fixtures-dir",
         type=Path,
@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--cookie",
-        help="Authenticated Cookie header value, for example 'echomind_session=...'.",
+        help="Authenticated Cookie header value, for example 'el_espejo_session=...'.",
     )
     parser.add_argument(
         "--username", help="Username used to obtain a session from POST /auth/login"

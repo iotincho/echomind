@@ -11,13 +11,13 @@ python scripts/ingest_alex_diary.py --dry-run
 Con la API disponible y una sesión válida, cargar las 15 notas base:
 
 ```bash
-python scripts/ingest_alex_diary.py --api-url http://localhost:8000 --cookie 'echomind_session=...'
+python scripts/ingest_alex_diary.py --api-url http://localhost:8000 --cookie 'el_espejo_session=...'
 ```
 
 Luego de ejecutar la primera batería de pruebas, incorporar solo las notas 16–18:
 
 ```bash
-python scripts/ingest_alex_diary.py --phase incremental --cookie 'echomind_session=...'
+python scripts/ingest_alex_diary.py --phase incremental --cookie 'el_espejo_session=...'
 ```
 
 El script acepta `--username` y `--password` como alternativa al cookie para iniciar sesión mediante `POST /auth/login`. Para repetir una carga interrumpida sin fallar por los UUID estables, usar `--skip-existing`. `--phase all` carga las 18 notas, pero evita ese modo si se quiere medir la actualización temporal de forma controlada.

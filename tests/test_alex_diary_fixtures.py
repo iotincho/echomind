@@ -1,4 +1,4 @@
-"""Contract tests for the reproducible synthetic EchoMind evaluation corpus."""
+"""Contract tests for the reproducible synthetic El Espejo evaluation corpus."""
 
 import json
 from datetime import UTC

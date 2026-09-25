@@ -5,7 +5,7 @@ from src.embeddings.contracts import SimilarClaim
 from src.reflection.contracts import MetadataFieldDefinition, ReflectionDocument
 
 CORE_FIELD_DEFINITIONS = {
-    "id": MetadataFieldDefinition(description="Stable EchoMind document identifier.", value_type="string"),
+    "id": MetadataFieldDefinition(description="Stable El Espejo document identifier.", value_type="string"),
     "source": MetadataFieldDefinition(description="Ingestion provenance supplied with the document.", value_type="string"),
     "created_at": MetadataFieldDefinition(
         description="When the note was expressed, preserving its timezone offset. Use it to order events and identify the latest known state; it is not the extraction or upload time.",

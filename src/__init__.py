@@ -1,1 +1,1 @@
-"""EchoMind application package."""
+"""El Espejo application package."""

@@ -1,10 +1,10 @@
-# EchoMind
+# El Espejo
 
 > Un instrumento de introspección personal asistido por IA.
 
 ## Contexto
 
-EchoMind es una prueba de concepto (POC) para explorar si la IA puede ayudar a una persona a observar, recorrer y comprender sus propios pensamientos a lo largo del tiempo.
+El Espejo es una prueba de concepto (POC) para explorar si la IA puede ayudar a una persona a observar, recorrer y comprender sus propios pensamientos a lo largo del tiempo.
 
 No busca ser un psicólogo virtual, un sistema de diagnóstico de salud mental, otra aplicación genérica de notas, ni un chatbot con historial largo. Busca ser un **espejo personal**: un lugar donde volcar pensamientos, ideas, decisiones, reflexiones y experiencias, y desde el cual explorar patrones, recurrencias, tensiones, conflictos y cambios a partir de evidencia en el propio material.
 
@@ -303,7 +303,7 @@ Una futura PWA o app móvil solo debería escribir, grabar, consultar y explorar
 ## Estructura sugerida
 
 ```text
-echomind/
+el_espejo/
 ├── src/
 │   ├── ingestion/
 │   ├── extraction/

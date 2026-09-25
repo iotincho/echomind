@@ -55,8 +55,8 @@ def main() -> int:
     parser.add_argument("--api-url", default="http://localhost:8080/api")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    username = os.environ["ECHOMIND_AUTH_USERNAME"]
-    password = os.environ["ECHOMIND_AUTH_PASSWORD"]
+    username = os.environ["AUTH_USERNAME"]
+    password = os.environ["AUTH_PASSWORD"]
     base_url = args.api_url.rstrip("/")
     # Fetch a session cookie; it is returned as an HTTP header rather than JSON.
     login_request = Request(f"{base_url}/auth/login", data=json.dumps({"username": username, "password": password}).encode(), headers={"Content-Type": "application/json"}, method="POST")

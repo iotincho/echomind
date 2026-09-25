@@ -17,13 +17,13 @@ def main() -> int:
     parser.add_argument("--profile", default="v4")
     parser.add_argument(
         "--api-url",
-        default=os.environ.get("ECHOMIND_API_URL", "http://localhost:8080/api"),
+        default=os.environ.get("API_URL", "http://localhost:8080/api"),
     )
     args = parser.parse_args()
-    username = os.environ.get("ECHOMIND_AUTH_USERNAME")
-    password = os.environ.get("ECHOMIND_AUTH_PASSWORD")
+    username = os.environ.get("AUTH_USERNAME")
+    password = os.environ.get("AUTH_PASSWORD")
     if not username or not password:
-        print("ECHOMIND_AUTH_USERNAME and ECHOMIND_AUTH_PASSWORD are required", file=sys.stderr)
+        print("AUTH_USERNAME and AUTH_PASSWORD are required", file=sys.stderr)
         return 2
 
     try:

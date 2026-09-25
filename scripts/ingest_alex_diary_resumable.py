@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 from ingest_alex_diary import load_fixtures
 
 
-API_URL = os.environ.get("ECHOMIND_API_URL", "http://localhost:8080/api").rstrip("/")
+API_URL = os.environ.get("API_URL", "http://localhost:8080/api").rstrip("/")
 REQUEST_TIMEOUT_SECONDS = 180
 
 
@@ -26,10 +26,10 @@ def post(path: str, payload: dict, cookie: str | None = None):
 
 
 def main() -> int:
-    username = os.environ.get("ECHOMIND_AUTH_USERNAME")
-    password = os.environ.get("ECHOMIND_AUTH_PASSWORD")
+    username = os.environ.get("AUTH_USERNAME")
+    password = os.environ.get("AUTH_PASSWORD")
     if not username or not password:
-        print("Missing EchoMind authentication environment variables", file=sys.stderr)
+        print("Missing El Espejo authentication environment variables", file=sys.stderr)
         return 2
 
     with post("/auth/login", {"username": username, "password": password}) as response:

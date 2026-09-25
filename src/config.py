@@ -13,12 +13,12 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    environment: str = Field(default="development", validation_alias="ECHOMIND_ENVIRONMENT")
-    log_level: str = Field(default="INFO", validation_alias="ECHOMIND_LOG_LEVEL")
+    environment: str = Field(default="development", validation_alias="ENVIRONMENT")
+    log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
     neo4j_uri: str = Field(default="bolt://localhost:7687", validation_alias="NEO4J_URI")
     neo4j_username: str = Field(default="neo4j", validation_alias="NEO4J_USERNAME")
     neo4j_password: str = Field(
-        default="echomind-local-password", validation_alias="NEO4J_PASSWORD", repr=False
+        default="el-espejo-local-password", validation_alias="NEO4J_PASSWORD", repr=False
     )
     documents_path: Path = Field(default=Path("data/documents"), validation_alias="DOCUMENTS_PATH")
     extractions_path: Path = Field(
@@ -39,11 +39,11 @@ class Settings(BaseSettings):
         default="text-embedding-3-small",
         validation_alias="OPENAI_EMBEDDING_MODEL",
     )
-    auth_username: str | None = Field(default=None, validation_alias="ECHOMIND_AUTH_USERNAME")
-    auth_password: str | None = Field(default=None, validation_alias="ECHOMIND_AUTH_PASSWORD", repr=False)
-    auth_session_secret: str | None = Field(default=None, validation_alias="ECHOMIND_AUTH_SESSION_SECRET", repr=False)
-    auth_session_ttl_seconds: int = Field(default=604800, validation_alias="ECHOMIND_AUTH_SESSION_TTL_SECONDS", gt=0)
-    auth_cookie_secure: bool = Field(default=True, validation_alias="ECHOMIND_AUTH_COOKIE_SECURE")
+    auth_username: str | None = Field(default=None, validation_alias="AUTH_USERNAME")
+    auth_password: str | None = Field(default=None, validation_alias="AUTH_PASSWORD", repr=False)
+    auth_session_secret: str | None = Field(default=None, validation_alias="AUTH_SESSION_SECRET", repr=False)
+    auth_session_ttl_seconds: int = Field(default=604800, validation_alias="AUTH_SESSION_TTL_SECONDS", gt=0)
+    auth_cookie_secure: bool = Field(default=True, validation_alias="AUTH_COOKIE_SECURE")
 
     openai_embedding_dimensions: int = Field(
         default=1536,

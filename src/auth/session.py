@@ -2,7 +2,7 @@ import base64, hashlib, hmac, json, secrets, time
 from fastapi import HTTPException, Request, status
 from src.config import get_settings
 
-COOKIE_NAME = "echomind_session"
+COOKIE_NAME = "el_espejo_session"
 
 def _sign(payload: bytes, secret: str) -> str:
     return hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()

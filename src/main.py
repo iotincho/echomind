@@ -1,4 +1,4 @@
-"""HTTP entrypoint for the EchoMind POC."""
+"""HTTP entrypoint for the El Espejo POC."""
 
 from contextlib import asynccontextmanager
 
@@ -20,7 +20,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="EchoMind",
+    title="El Espejo",
     description="Personal AI-assisted introspection proof of concept.",
     version="0.1.0",
     lifespan=lifespan,
